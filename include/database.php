@@ -154,7 +154,7 @@ function databaseBanUser($service_id, $username, $realm, $duration, $reason, $un
 		}
 		
 		//make sure user isn't already banned
-		$result = mysql_query("SELECT COUNT(*) FROM bans WHERE name = '$username' AND server = '$realm_it'", $link);
+		$result = mysql_query("SELECT COUNT(*) FROM bans WHERE name = '$username' AND server = '$realm_it' AND context = 'ttr.cloud'", $link);
 		$row = mysql_fetch_row($result);
 		if($row[0] > 0) {
 			continue;
@@ -171,12 +171,12 @@ function databaseBanUser($service_id, $username, $realm, $duration, $reason, $un
 				$ban_realm = $realm_it;
 				if($ban_realm == "") $ban_realm = "uswest.battle.net";
 				
-				mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, expiredate) VALUES ('0', '$ban_realm', '$username', '$ip', CURDATE(), '', '$username_clean', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ))", $link);
+				mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, expiredate, context) VALUES ('0', '$ban_realm', '$username', '$ip', CURDATE(), '', '$username_clean', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ), 'ttr.cloud')", $link);
 			}
 		} else {
 			//no previous games found; ban by username only if this is an actual realm
 			if($realm_it != "") {
-				mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, expiredate) VALUES ('0', '$realm_it', '$username', '', CURDATE(), '', '$username_clean', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ))", $link);
+				mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, expiredate, context) VALUES ('0', '$realm_it', '$username', '', CURDATE(), '', '$username_clean', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ), 'ttr.cloud')", $link);
 			}
 		}
 }
