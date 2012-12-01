@@ -120,6 +120,8 @@ if(isset($config['ghostParameters'])) {
 	$updatableFiles = array_merge($updatableFiles, $config['updatableFiles']);
 }
 
+require_once(includePath() . "/jail.php");
+
 //escapes function in configuration file
 function ghostEscape($type, $default, $type_extra, $value) {
 	if($type == 0) {
@@ -175,7 +177,7 @@ function ghostAddService($account_id, $service_name, $service_description, $iden
 	setServiceParam($service_id, 'id3', $id3);
 	
 	//create target directory
-	mkdir($directory);
+	mkdir($directory, 0700);
 	
 	//create default.cfg
 	$fh = fopen($directory . 'default.cfg', 'w');
@@ -216,9 +218,9 @@ function ghostAddService($account_id, $service_name, $service_description, $iden
 	chmod($directory . "chop++", 0700);
 	
 	//make the subdirectories
-	mkdir($directory . "replays");
-	mkdir($directory . "maps");
-	mkdir($directory . "mapcfgs");
+	mkdir($directory . "replays", 0700);
+	mkdir($directory . "maps", 0700);
+	mkdir($directory . "mapcfgs", 0700);
 	
 	return $service_id;
 }
@@ -233,8 +235,6 @@ function ghostGetStatus($service_id) {
 	if($id === false) {
 		return array('status' => "ERROR: failed to find bot identifier", 'err' => array(), 'color' => 'red');
 	}
-	
-	$log_file = $config['ghost_path'] . $id . '/ghost.log';
 	
 	//read last lines of the log file and scan for interesting things
 	$lines = ghostGetLog($service_id, 1000);
@@ -333,6 +333,11 @@ function ghostGetConfiguration($service_id, $skip = true) {
 	}
 	
 	//read the configuration file
+	$jail = jailEnabled($service_id);
+	if($jail) {
+		jailFileOpen($service_id, "ghost", "ghost.cfg");
+	}
+	
 	$fh = fopen($config['ghost_path'] . $id . "/ghost.cfg", 'r');
 	$array = array();
 	
@@ -358,6 +363,11 @@ function ghostGetConfiguration($service_id, $skip = true) {
 	}
 	
 	fclose($fh);
+	
+	if($jail) {
+		jailFileClose($service_id, "ghost", "ghost.cfg", false);
+	}
+	
 	return $array;
 }
 
@@ -613,6 +623,12 @@ function ghostReconfigure($service_id, $array, $remove = false) {
 	}
 	
 	fclose($fout);
+	
+	$jail = jailEnabled($service_id);
+	if($jail) {
+		jailFileClose($service_id, "ghost", "ghost.cfg", true);
+	}
+	
 	return true;
 }
 
@@ -655,14 +671,14 @@ function ghostUpdateFile($service_id, $filename, $content, $mapcfg = false) {
 	}
 	
 	$pass = in_array($filename, $updatableFiles);
-	$target = $config['ghost_path'] . $id . "/" . $filename;
+	$relTarget = $filename;
 	
 	if($mapcfg) {
 		$filename = escapeFile($filename);
-		$target = $config['ghost_path'] . $id . "/mapcfgs/" . $filename;
+		$relTarget = "mapcfgs/" . $filename;
 		$pass = true;
 		
-		if(!file_exists($target)) {
+		if(!file_exists($config['ghost_path'] . $id . "/" . $relTarget)) {
 			//make sure didn't exceed limit on mapcfgs
 			$cfgLimit = getServiceParam($service_id, "mclimit");
 	
@@ -675,10 +691,16 @@ function ghostUpdateFile($service_id, $filename, $content, $mapcfg = false) {
 	}
 	
 	if($pass) {
+		$target = $config['ghost_path'] . $id . "/" . $relTarget;
 		$content = str_replace("\r", "", $content);
 		$fout = fopen($target, 'w');
 		fwrite($fout, $content);
 		fclose($fout);
+		
+		$jail = jailEnabled($service_id);
+		if($jail) {
+			jailFileClose($service_id, "ghost", $relTarget, true);
+		}
 	}
 }
 
@@ -694,14 +716,39 @@ function ghostDisplayFile($service_id, $filename, $mapcfg = false) {
 	}
 	
 	if(!$mapcfg && in_array($filename, $updatableFiles)) {
-		return file_get_contents($config['ghost_path'] . $id . "/" . $filename);
+		$jail = jailEnabled($service_id);
+		if($jail) {
+			jailFileOpen($service_id, "ghost", $filename);
+		}
+		
+		$str = file_get_contents($config['ghost_path'] . $id . "/" . $filename);
+		
+		if($jail) {
+			jailFileClose($service_id, "ghost", $filename, false);
+		}
+		
+		return $str;
 	} else if($mapcfg) {
 		$filename = escapeFile($filename);
 		
 		if(getExtension($filename) != "cfg") {
 			return "Error: bad filename. Incident has been reported to administration.";
-		} else if(file_exists($config['ghost_path'] . $id . "/mapcfgs/" . $filename)) {
-			return file_get_contents($config['ghost_path'] . $id . "/mapcfgs/" . $filename);
+		}
+		
+		$jail = jailEnabled($service_id);
+		
+		if(($jail && jailFileExists($service_id, 'mapcfgs/' . $filename)) || (!$jail && file_exists($config['ghost_path'] . $id . "/mapcfgs/" . $filename))) {
+			if($jail) {
+				jailFileOpen($service_id, "ghost", "mapcfgs/" . $filename);
+			}
+		
+			$str = file_get_contents($config['ghost_path'] . $id . "/mapcfgs/" . $filename);
+		
+			if($jail) {
+				jailFileClose($service_id, "ghost", "mapcfgs/" . $filename, false);
+			}
+		
+			return $str;
 		} else {
 			return "This map configuration file does not exist.";
 		}
@@ -738,7 +785,7 @@ function ghostMapLink($service_id, $filename) {
 	
 	//create the symlink
 	$result = symlink($source, $target);
-	
+
 	if($result === false) {
 		return "Error: could not link the files. Please contact support.";
 	} else {
@@ -766,6 +813,7 @@ function ghostMapUpload($service_id, $files) {
 	}
 	
 	$num_maps = dirCount($config['ghost_path'] . $id . "/maps");
+	
 	if($num_maps > $mapLimit) {
 		return "You have exceeded the limit on the number of maps. Please contact support.";
 	}
@@ -811,10 +859,17 @@ function ghostMapDelete($service_id, $filename, $mapcfg = false) {
 	
 	//escape the map
 	$filename = escapeFile(baseName($filename));
-	$target = $config['ghost_path'] . $id . ($mapcfg ? "/mapcfgs/" : "/maps/") . $filename;
+	$relTarget = ($mapcfg ? "mapcfgs/" : "maps/") . $filename;
+	$target = $config['ghost_path'] . $id . "/" . $relTarget;
 	
-	if(file_exists($target)) {
-		unlink($target);
+	$jail = jailEnabled($service_id);
+	//unlink if this is a map, or if we're not jailed (maps are not jailed)
+	if($jail || !$mapcfg) {
+		if(file_exists($target)) {
+			unlink($target);
+		}
+	} else {
+		jailFileDelete($service_id, $relTarget);
 	}
 }
 
@@ -834,13 +889,21 @@ function ghostMapList($service_id, $source = "maps") {
 	//ok iterate through maps
 	$extensions = array("w3x", "w3m");
 	
+	if($source == "mapcfgs") {
+		$extensions = array("cfg");
+	}
+	
 	if($source == "repository") {
 		$dir = new DirectoryIterator($config['ghost_path'] . "maps");
 	} else if($source == "maps") {
 		$dir = new DirectoryIterator($config['ghost_path'] . $id . "/maps");
 	} else if($source == "mapcfgs") {
+		$jail = jailEnabled($service_id);
+		if($jail) {
+			return jailDirList($service_id, "mapcfgs");
+		}
+		
 		$dir = new DirectoryIterator($config['ghost_path'] . $id . "/mapcfgs");
-		$extensions = array("cfg");
 	} else {
 		return "Error: bad source to ghostMapList.";
 	}
@@ -961,13 +1024,21 @@ function ghostGetLog($service_id, $numlines = 400) {
 	
 	$log_file = $config['ghost_path'] . $id . '/ghost.log';
 	
-	if(!file_exists($log_file)) {
+	$jail = jailEnabled($service_id);
+	
+	if(($jail && !jailFileExists($service_id, "ghost.log")) || (!$jail && !file_exists($log_file))) {
 		return false;
 	}
 	
-	//read last lines of the log file and scan for interesting things
+	//read last lines of the log file
 	$output_array = array();
-	exec("tail -n 1000 " . escapeshellarg($log_file), $output_array);
+	
+	if($jail) {
+		jailExecute($service_id, "tail -n 1000 " . escapeshellarg(jailPath($service_id) . "ghost.log"), $output_array);
+	} else {
+		exec("tail -n 1000 " . escapeshellarg($log_file), $output_array);
+	}
+	
 	return $output_array;
 }
 
@@ -997,7 +1068,13 @@ function ghostBotStart($service_id) {
 	}
 	
 	//start the bot
-	$pid = shell_exec("cd {$config['ghost_path']}$id && nohup ./ghost++ ghost.cfg > /dev/null 2>&1 & echo $!");
+	$jail = jailEnabled($service_id);
+	
+	if($jail) {
+		$pid = jailExecute($service_id, "cd " . escapeshellarg(jailPath($service_id)) . " && nohup ./ghost++ ghost.cfg > /dev/null 2>&1 & echo $!");
+	} else {
+		$pid = shell_exec("cd " . escapeshellarg($config['ghost_path'] . $id) . " && nohup ./ghost++ ghost.cfg > /dev/null 2>&1 & echo $!");
+	}
 	
 	//save the pid and last start time
 	setServiceParam($service_id, "pid", $pid);
@@ -1040,11 +1117,17 @@ function ghostBotStop($service_id, $restart = false) {
 		}
 	}
 	
-	//stop the bot, but make sure PID is still of GHost
-	$result = exec("cat /proc/$pid/cmdline");
-	
-	if(stripos($result, 'ghost') !== false) {
-		exec("kill -s INT $pid");
+	//stop the bot
+	$jail = jailEnabled($service_id);
+	if($jail) {
+		jailExecute($service_id, "kill -s INT $pid");
+	} else {
+		//make sure PID is still of pychop
+		$result = exec("cat /proc/$pid/cmdline");
+		
+		if(stripos($result, 'ghost') !== false) {
+			exec("kill -s INT $pid");
+		}
 	}
 	
 	//reset the pid
@@ -1075,6 +1158,12 @@ function ghostSetDatabase($service_id, $db_settings) {
 	}
 	
 	//read/write the configuration file
+	$jail = jailEnabled($service_id);
+	
+	if($jail) {
+		jailFileOpen($service_id, "ghost", "default.cfg");
+	}
+	
 	$fin = fopen($config['ghost_path'] . $id . "/default.cfg", 'r');
 	$fout = fopen($config['ghost_path'] . $id . "/default.cfg_", 'w');
 	
@@ -1097,6 +1186,10 @@ function ghostSetDatabase($service_id, $db_settings) {
 	fclose($fin);
 	fclose($fout);
 	rename($config['ghost_path'] . $id . "/default.cfg_", $config['ghost_path'] . $id . "/default.cfg");
+	
+	if($jail) {
+		jailFileOpen($service_id, "ghost", "default.cfg", true);
+	}
 }
 
 //STYLE FUNCTIONS

@@ -72,6 +72,8 @@ if(isset($config['channelPlugins'])) {
 	$channelPlugins = array_merge($channelPlugins, $config['channelPlugins']);
 }
 
+require_once(includePath() . "/jail.php");
+
 //escapes function in configuration file
 function channelEscape($type, $default, $type_extra, $value) {
 	if($type == 0) {
@@ -113,7 +115,7 @@ function channelAddService($account_id, $service_name, $service_description, $id
 	$service_id = createService($account_id, $service_name, $service_description, "channel", array('id' => $identifier));
 	
 	//create target directory
-	mkdir($directory);
+	mkdir($directory, 0700);
 	
 	//write settings
 	$fh = fopen($directory . 'chop.cfg', 'w');
@@ -129,9 +131,9 @@ function channelAddService($account_id, $service_name, $service_description, $id
 	fclose($fh);
 	
 	//make the subdirectories
-	mkdir($directory . "cfg");
-	mkdir($directory . "plugins");
-	mkdir($directory . "plugins/pychop");
+	mkdir($directory . "cfg", 0700);
+	mkdir($directory . "plugins", 0700);
+	mkdir($directory . "plugins/pychop", 0700);
 	
 	//copy files
 	copy($config['channel_path'] . "language.cfg", $directory . "language.cfg");
@@ -161,8 +163,6 @@ function channelGetStatus($service_id) {
 	if($id === false) {
 		return array('status' => "ERROR: failed to find bot identifier", 'err' => array(), 'color' => 'red');
 	}
-	
-	$log_file = $config['channel_path'] . $id . '/chop.log';
 	
 	//read last lines of the log file and scan for interesting things
 	$lines = channelGetLog($service_id, 1000);
@@ -254,6 +254,11 @@ function channelGetConfiguration($service_id, $skip = true) {
 		return false;
 	}
 	
+	$jail = jailEnabled($service_id);
+	if($jail) {
+		jailFileOpen($service_id, "channel", "chop.cfg");
+	}
+	
 	//read the configuration file
 	$fh = fopen($config['channel_path'] . $id . "/chop.cfg", 'r');
 	$array = array();
@@ -280,6 +285,11 @@ function channelGetConfiguration($service_id, $skip = true) {
 	}
 	
 	fclose($fh);
+	
+	if($jail) {
+		jailFileClose($service_id, "channel", "chop.cfg", false);
+	}
+	
 	return $array;
 }
 
@@ -334,6 +344,12 @@ function channelReconfigure($service_id, $array, $force = false) {
 	}
 	
 	fclose($fout);
+	
+	$jail = jailEnabled($service_id);
+	if($jail) {
+		jailFileClose($service_id, "channel", "chop.cfg", true);
+	}
+	
 	return true;
 }
 
@@ -382,6 +398,11 @@ function channelUpdateFile($service_id, $filename, $content) {
 		$fout = fopen($target, 'w');
 		fwrite($fout, $content);
 		fclose($fout);
+		
+		$jail = jailEnabled($service_id);
+		if($jail) {
+			jailFileClose($service_id, "channel", $filename, true);
+		}
 	}
 }
 
@@ -397,7 +418,18 @@ function channelDisplayFile($service_id, $filename) {
 	}
 	
 	if(in_array($filename, $channelUpdatableFiles)) {
-		return file_get_contents($config['channel_path'] . $id . "/" . $filename);
+		$jail = jailEnabled($service_id);
+		if($jail) {
+			jailFileOpen($service_id, "channel", $filename);
+		}
+		
+		$str = file_get_contents($config['channel_path'] . $id . "/" . $filename);
+		
+		if($jail) {
+			jailFileClose($service_id, "channel", $filename, false);
+		}
+		
+		return $str;
 	} else {
 		return "Error: failed to load file!";
 	}
@@ -416,13 +448,21 @@ function channelGetLog($service_id, $numlines = 400) {
 	
 	$log_file = $config['channel_path'] . $id . '/chop.log';
 	
-	if(!file_exists($log_file)) {
+	$jail = jailEnabled($service_id);
+	
+	if(($jail && !jailFileExists($service_id, "chop.log")) || (!$jail && !file_exists($log_file))) {
 		return false;
 	}
 	
-	//read last lines of the log file and scan for interesting things
+	//read last lines of the log file
 	$output_array = array();
-	exec("tail -n 1000 " . escapeshellarg($log_file), $output_array);
+	
+	if($jail) {
+		jailExecute($service_id, "tail -n 1000 " . escapeshellarg(jailPath($service_id) . "chop.log"), $output_array);
+	} else {
+		exec("tail -n 1000 " . escapeshellarg($log_file), $output_array);
+	}
+	
 	return $output_array;
 }
 
@@ -452,7 +492,13 @@ function channelBotStart($service_id) {
 	}
 	
 	//start the bot
-	$pid = shell_exec("cd {$config['channel_path']}$id && nohup ./chop++ chop.cfg > /dev/null 2>&1 & echo $!");
+	$jail = jailEnabled($service_id);
+	
+	if($jail) {
+		$pid = jailExecute($service_id, "cd " . escapeshellarg(jailPath($service_id)) . " && nohup ./chop++ chop.cfg > /dev/null 2>&1 & echo $!");
+	} else {
+		$pid = shell_exec("cd " . escapeshellarg($config['ghost_path'] . $id) . " && nohup ./chop++ chop.cfg > /dev/null 2>&1 & echo $!");
+	}
 	
 	//save the pid and last start time
 	setServiceParam($service_id, "pid", $pid);
@@ -495,11 +541,17 @@ function channelBotStop($service_id, $restart = false) {
 		}
 	}
 	
-	//stop the bot, but make sure PID is still of pychop
-	$result = exec("cat /proc/$pid/cmdline");
-	
-	if(stripos($result, 'chop') !== false) {
-		exec("kill -s INT $pid");
+	//stop the bot
+	$jail = jailEnabled($service_id);
+	if($jail) {
+		jailExecute("kill -s INT $pid");
+	} else {
+		//make sure PID is still of pychop
+		$result = exec("cat /proc/$pid/cmdline");
+		
+		if(stripos($result, 'chop') !== false) {
+			exec("kill -s INT $pid");
+		}
 	}
 	
 	//reset the pid

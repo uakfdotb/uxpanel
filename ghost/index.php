@@ -12,6 +12,10 @@ if(isset($_SESSION['account_id']) && isset($_REQUEST['id']) && is_numeric($_REQU
 	$service_id = $_REQUEST['id'];
 	$message = "";
 	
+	if(isset($_REQUEST['message'])) {
+		$message = $_REQUEST['message'];
+	}
+	
 	if(isset($_POST['action'])) {
 		if($_POST['action'] == "start") {
 			$result = ghostBotStart($service_id);
@@ -38,10 +42,15 @@ if(isset($_SESSION['account_id']) && isset($_REQUEST['id']) && is_numeric($_REQU
 				$message = $result;
 			}
 		}
+		
+		if(!isset($_SESSION['noredirect'])) {
+			header("Location: index.php?id=" . $service_id . "&message=" . urlencode($message));
+		}
 	}
 	
 	$status = ghostGetStatus($service_id);
-	get_page("status", "ghost", array('service_id' => $service_id, 'status' => $status, 'message' => $message));
+	$botStatus = getServiceParam($service_id, "pid") != 0 ? "Online" : "Offline";
+	get_page("status", "ghost", array('service_id' => $service_id, 'status' => $status, 'message' => $message, 'botStatus' => $botStatus));
 } else {
 	header("Location: ../panel/");
 }
