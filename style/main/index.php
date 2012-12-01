@@ -34,6 +34,9 @@
 
 <form class="form-signin" method="post" action="index.php">
 	<h2 class="form-signin-heading">Please sign in</h2>
+	<? if(isset($message) && $message != "") { ?>
+		<p><strong><?= htmlspecialchars($message) ?></strong></p>
+	<? } ?>
 	<input type="text" name="email" class="input-block-level" placeholder="Email address">
 	<input type="password" name="password" class="input-block-level" placeholder="Password">
 	<button class="btn btn-large btn-primary" type="submit">Sign in</button>

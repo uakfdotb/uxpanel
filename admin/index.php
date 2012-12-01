@@ -14,9 +14,9 @@ if(isset($_SESSION['admin'])) {
 	} else {
 		get_page("index", "admin", array());
 	}
-} else if(isset($_REQUEST['username']) && isset($_REQUEST['password'])) {
-	if(authAdmin($_REQUEST['username'], $_REQUEST['password'])) {
-		$_SESSION['admin'] = $_REQUEST['username'];
+} else if(isset($_POST['username']) && isset($_POST['password'])) {
+	if(authAdmin($_POST['username'], $_POST['password'])) {
+		$_SESSION['admin'] = $_POST['username'];
 		header("Location: index.php");
 	} else {
 		header("Location: index.php?message=" . urlencode("Login failed."));
@@ -28,7 +28,7 @@ if(isset($_SESSION['admin'])) {
 		$message = $_REQUEST['message'];
 	}
 	
-	get_page("index_login", "admin", array());
+	get_page("index_login", "admin", array('message' => $message));
 }
 
 ?>

@@ -10,9 +10,9 @@
 
 <? foreach($services as $service) { ?>
 <tr>
-	<td><a href="<?= $serviceExtra[$service[0]]['link'] ?>"><?= $service[1] ?></a></td>
-	<td><?= $serviceExtra[$service[0]]['price'] ?></td>
-	<td><?= $serviceExtra[$service[0]]['due'] ?></td>
+	<td><a href="<?= htmlspecialchars($serviceExtra[$service['id']]['link']) ?>"><?= htmlspecialchars($service['name']) ?></a></td>
+	<td><?= htmlspecialchars($serviceExtra[$service['id']]['price']) ?></td>
+	<td><?= htmlspecialchars($serviceExtra[$service['id']]['due']) ?></td>
 </tr>
 <? } ?>
 

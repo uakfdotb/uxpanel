@@ -1,11 +1,11 @@
 <h1>Services</h1>
 
 <? if(isset($message) && $message != "") { ?>
-	<p><b><i><?= $message ?></i></b></p>
+	<p><b><i><?= htmlspecialchars($message) ?></i></b></p>
 <? } ?>
 
-<p>Email address: <?= $info[0] ?>
-<br />Name: <?= $info[1] ?></p>
+<p>Email address: <?= htmlspecialchars($info['email']) ?>
+<br />Name: <?= htmlspecialchars($info['name']) ?></p>
 
 <form method="post" action="account.php?action=add&id=<?= $id ?>">
 Name: <input type="text" name="name" />
@@ -28,10 +28,16 @@ Name: <input type="text" name="name" />
 
 <? foreach($services as $service) { ?>
 <tr>
-	<td><a href="service.php?id=<?= $service[0] ?>"><?= $service[1] ?></a></td>
-	<td><?= $serviceExtra[$service[0]]['price'] ?></td>
-	<td><?= $serviceExtra[$service[0]]['due'] ?></td>
-	<td><a href="account.php?id=<?= $id ?>&action=delete&delete_id=<?= $service[0] ?">delete</a></td>
+	<td><a href="service.php?id=<?= urlencode($service['id']) ?>"><?= htmlspecialchars($service['name']) ?></a></td>
+	<td><?= htmlspecialchars($serviceExtra[$service['id']]['price']) ?></td>
+	<td><?= htmlspecialchars($serviceExtra[$service['id']]['due']) ?></td>
+	<td>
+		<form method="post" action="account.php?id=<?= $id ?>">
+		<input type="hidden" name="action" value="delete" />
+		<input type="hidden" name="delete_id" value="<?= htmlspecialchars($service['id']) ?>" />
+		<input type="submit" value="delete" />
+		</form>
+	</td>
 </tr>
 <? } ?>
 

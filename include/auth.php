@@ -3,13 +3,22 @@
 //true: success login
 //-1: try again later
 //-2: invalid information
-function authAccount($email, $password) {
+//if force is set, any password will be accepted
+function authAccount($email, $password, $force = false) {
 	global $_SESSION, $db;
+	
+	if(!checkLock("checkuser")) {
+		return -1;
+	}
 
 	$email = escape($email);
 	$password = escape(chash($password));
 	
-	$result = mysql_query("SELECT id, email, name FROM accounts WHERE email = '$email' AND password = '$password'", $db);
+	if($force) {
+		$result = mysql_query("SELECT id, email, name FROM accounts WHERE email = '$email'", $db);
+	} else {
+		$result = mysql_query("SELECT id, email, name FROM accounts WHERE email = '$email' AND password = '$password'", $db);
+	}
 	
 	if($row = mysql_fetch_row($result)) {
 		$_SESSION['account_id'] = $row[0];
@@ -17,6 +26,7 @@ function authAccount($email, $password) {
 		$_SESSION['account_name'] = $row[2];
 		return true;
 	} else {
+		lockAction("checkuser");
 		return -2;
 	}
 }
@@ -24,10 +34,46 @@ function authAccount($email, $password) {
 function authAdmin($username, $password) {
 	global $config;
 	
+	if(!checkLock("checkadmin")) {
+		return false;
+	}
+	
 	if($config['admin_username'] == $username && $config['admin_password'] == $password) {
 		return true;
 	} else {
+		lockAction("checkadmin");
 		return false;
+	}
+}
+
+//string: error message
+//true: success
+function authChangePassword($user_id, $old_password, $new_password) {
+	global $config, $db;
+	
+	if(!checkLock("checkuser")) {
+		return "Too many failed attempts. Please try again later.";
+	}
+	
+	if(strlen($new_password) < 6) {
+		return "The new password is too short. Please use at least six characters.";
+	}
+	
+	if($old_password == $new_password) {
+		return "The old and new passwords are identical.";
+	}
+	
+	$user_id = escape($user_id);
+	$old_password = escape(chash($old_password));
+	$new_password = escape(chash($new_password));
+	
+	$result = mysql_query("UPDATE accounts SET password = '$new_password' WHERE id = '$user_id' AND password = '$old_password'", $db);
+	
+	if(mysql_affected_rows() == 0) {
+		lockAction("checkuser");
+		return "The password you entered is not correct.";
+	} else {
+		return true;
 	}
 }
 

@@ -17,7 +17,7 @@ $ghostParameters = array(
 	'bot_commandtrigger' => array(0, '!', 0, "The in-game command trigger."),
 	'bot_virtualhostname' => array(0, '|cFF4080C0GHost', 0, "The virtual host name in lobby"),
 	'bot_checkmultipleipusage' => array(2, 1, 0, 'Whether to report multiple IP usage in lobby'),
-	'bot_spoofchecks' => array(3, 1, array(0 => 'Disable automatic spoofchecking', 1 => 'Enable auto-spoofcheck on all players', 2 => 'Enable auto-spoofcheck on admins only'),
+	'bot_spoofchecks' => array(3, 1, array(0 => 'Disable automatic spoofchecking', 1 => 'Enable auto-spoofcheck on all players', 2 => 'Enable auto-spoofcheck on admins only'), 'Spoofchecking method'),
 	'bot_requirespoofchecks' => array(2, 1, 0, 'Whether to require players to spoofcheck before starting the game'),
 	'bot_reserveadmins' => array(2, 1, 0, 'Whether to reserve admins (reserved players can alwyas join full games)'),
 	'bot_autolock' => array(2, 0, 0, 'Whether to lock the game when the owner joins'),
@@ -48,11 +48,11 @@ $bnetParameters = array(
 	'commandtrigger' => array(0, '!', 0, 'The command trigger for this realm'),
 	'holdfriends' => array(2, 1, 0, 'Whether to reserve friends'),
 	'holdclan' => array(2, 1, 0, 'Whether to reserve clan members'),
-	'publiccommands' => array(2, 0, 0, 'Whether to allow non-admins to use commands over Battle.net')
-	'bnet_custom_exeversion' => array(0, '', 0, 'PVPGN setting: exe version; generally leave blank'),
-	'bnet_custom_exeversionhash' => array(0, '', 0, 'PVPGN setting: exe version hash; generally leave blank'),
-	'bnet_custom_passwordhashtype' => array(3, '', array('' => 'default', 'pvpgn' => 'pvpgn'), 'Set to pvpgn if this is a PVPGN realm, or default for Battle.net'),
-	'bnet_custom_pvpgnrealmname' => array(0, 'PvPGN Realm', 0, 'PVPGN setting: realm name; generally leave default')
+	'publiccommands' => array(2, 0, 0, 'Whether to allow non-admins to use commands over Battle.net'),
+	'custom_exeversion' => array(0, '', 0, 'PVPGN setting: exe version; generally leave blank'),
+	'custom_exeversionhash' => array(0, '', 0, 'PVPGN setting: exe version hash; generally leave blank'),
+	'custom_passwordhashtype' => array(3, '', array('' => 'default', 'pvpgn' => 'pvpgn'), 'Set to pvpgn if this is a PVPGN realm, or default for Battle.net'),
+	'custom_pvpgnrealmname' => array(0, 'PvPGN Realm', 0, 'PVPGN setting: realm name; generally leave default')
 	);
 
 // default.cfg parameters
@@ -95,10 +95,30 @@ $defaultParameters = array(
 	'db_type' => 'mysql',
 	'db_sqlite3_file' => 'ghost.dbs',
 	'db_mysql_server' => 'localhost',
-	'db_mysql_database' => 'ghost{ID3}',
-	'db_mysql_user' => 'ghost{ID3}',
+	'db_mysql_database' => '',
+	'db_mysql_user' => '',
 	'db_mysql_password' => $config['ghost_password']
 	);
+
+$updatableFiles = array('motd.txt', 'gameover.txt', 'gameloaded.txt', 'language.cfg');
+
+//get additional parameters from configuration
+
+if(isset($config['ghostParameters'])) {
+	$ghostParameters = array_merge($ghostParameters, $config['ghostParameters']);
+}
+
+if(isset($config['defaultParameters'])) {
+	$defaultParameters = array_merge($defaultParameters, $config['defaultParameters']);
+}
+
+if(isset($config['bnetParameters'])) {
+	$bnetParameters = array_merge($bnetParameters, $config['bnetParameters']);
+}
+
+if(isset($config['ghostParameters'])) {
+	$updatableFiles = array_merge($updatableFiles, $config['updatableFiles']);
+}
 
 //escapes function in configuration file
 function ghostEscape($type, $default, $type_extra, $value) {
@@ -109,16 +129,14 @@ function ghostEscape($type, $default, $type_extra, $value) {
 		//integer, convert
 		return intval($value);
 	} else if($type == 2) {
-		if($value == "true" || $value == "1") {
+		if($value == 1 || $value === "true") {
 			return 1;
 		} else {
-			return 2;
+			return 0;
 		}
 	} else if($type == 3) {
-		$value = intval($value);
-		
-		if($value >= 0 && $value < count($type_extra)) {
-			return $type_extra[$value];
+		if(isset($type_extra[$value])) {
+			return $value;
 		} else {
 			return $default;
 		}
@@ -128,10 +146,12 @@ function ghostEscape($type, $default, $type_extra, $value) {
 //integer: success, service id
 //string: error message
 function ghostAddService($account_id, $service_name, $service_description, $identifier, $id3 = -1) {
+	global $config;
+	
 	$identifier = stripAlphaNumeric($identifier);
 	
 	//set target directory
-	$directory = $config['ghost'] . $identifier . '/';
+	$directory = $config['ghost_path'] . $identifier . '/';
 	
 	if(file_exists($directory)) {
 		return "the target directory $directory already exists!";
@@ -152,7 +172,7 @@ function ghostAddService($account_id, $service_name, $service_description, $iden
 		$id3 .= "0";
 	}
 	
-	setServiceParameter($service_id, 'id3', $id3);
+	setServiceParam($service_id, 'id3', $id3);
 	
 	//create target directory
 	mkdir($directory);
@@ -161,6 +181,7 @@ function ghostAddService($account_id, $service_name, $service_description, $iden
 	$fh = fopen($directory . 'default.cfg', 'w');
 	
 	foreach($GLOBALS['defaultParameters'] as $key => $value) {
+		$value = str_replace("{ID3}", $id3, $value);
 		fwrite($fh, "$key = $value\n");
 	}
 	
@@ -170,21 +191,22 @@ function ghostAddService($account_id, $service_name, $service_description, $iden
 	$fh = fopen($directory . 'ghost.cfg', 'w');
 	
 	foreach($GLOBALS['ghostParameters'] as $key => $array) {
-		fwrite($fh, "$key = {$array[1]}");
+		$value = str_replace("{ID3}", $id3, $array[1]);
+		fwrite($fh, "$key = $value\n");
 	}
 	
 	fclose($fh);
 	
 	//create motd.txt, gameloaded.txt, gameover.txt
-	$fh = fopen("motd.txt", 'w');
+	$fh = fopen($directory . "motd.txt", 'w');
 	fwrite($fh, "This is the default welcome message. If you are the bot administrator, you can change this by logging into uxpanel and going to the message manager.\nThis game is hosted using GHost and uxpanel.\nFor more information, see codelain.com and uxpanel.clanent.net.");
 	fclose($fh);
 	
-	$fh = fopen("gameloaded.txt", 'w');
+	$fh = fopen($directory . "gameloaded.txt", 'w');
 	fwrite($fh, "This game is hosted using GHost and uxpanel.");
 	fclose($fh);
 	
-	$fh = fopen("motd.txt", 'w');
+	$fh = fopen($directory . "gameover.txt", 'w');
 	fwrite($fh, "This game was hosted using GHost and uxpanel.");
 	fclose($fh);
 	
@@ -192,16 +214,115 @@ function ghostAddService($account_id, $service_name, $service_description, $iden
 	copy($config['ghost_path'] . "language.cfg", $directory . "language.cfg");
 	copy($config['ghost_path'] . "ghost++", $directory . "ghost++");
 	
-	//make the replays directory
+	//make the subdirectories
 	mkdir($directory . "replays");
+	mkdir($directory . "maps");
+	mkdir($directory . "mapcfgs");
 	
 	return $service_id;
+}
+
+//returns array('status' => status string, 'err' => array(error strings), 'color' => suggested color)
+function ghostGetStatus($service_id) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return array('status' => "ERROR: failed to find bot identifier", 'err' => array(), 'color' => 'red');
+	}
+	
+	$log_file = $config['ghost_path'] . $id . '/ghost.log';
+	
+	//read last lines of the log file and scan for interesting things
+	$lines = ghostGetLog($service_id, 1000);
+	
+	if($lines === false) {
+		return array('status' => "Failed to read log file", 'err' => array(), 'color' => 'red');
+	}
+	
+	$lastline = $lines[count($lines) - 1];
+	$errors = array();
+	$status = "Up, no game";
+	$color = "orange";
+	
+	//scan lines for interesting things
+	foreach($lines as $line) {
+		//check if we disconnected from battle.net
+		if(strpos($line, 'disconnected from battle.net') !== false) {
+			$posBegin = strpos($line, 'BNET: ');
+			
+			if($posBegin !== false) {
+				$realmBegin = $posBegin + 6;
+				$posEnd = strpos($line, ']', $posBegin);
+				
+				if($posEnd !== false) {
+					$realm = substr($line, $realmBegin, $posEnd - $realmBegin);
+					$error = "Disconnected from bnet/$realm";
+				
+					//need to ensure this error wasn't added
+					// because this could occur multiple times
+					if(!in_array($error, $errors)) {
+						$errors[] = $error;
+					}
+				}
+			}
+		}
+		
+		# cd keys in use?
+		if(strpos($line, 'CD key in use') !== false) {
+			$posBegin = strpos($line, 'BNET: ');
+			
+			if($posBegin !== false) {
+				$realmBegin = $posBegin + 6;
+				$posEnd = strpos($line, ']', $posBegin);
+				
+				if($posEnd !== false) {
+					$realm = substr($line, $realmBegin, $posEnd - $realmBegin);
+					$error = "CD keys in use on bnet/$realm";
+				
+					//need to ensure this error wasn't added
+					// because this could occur multiple times
+					if(!in_array($error, $errors)) {
+						$errors[] = $error;
+					}
+				}
+			}
+		}
+		
+		# check if user has joined game recently
+		if(strpos($line, 'joined the game') !== false) {
+			$status = "Good";
+			$color = "green";
+		}
+	}
+	
+	# check last line to see if the bot is still running
+	$posBegin = strpos($lastline, '[');
+	
+	if($posBegin !== false) {
+		$posEnd = strpos($lastline, ']', $posBegin);
+		
+		if($posEnd !== false) {
+			$strTime = substr($lastline, $posBegin + 1, $posEnd - $posBegin - 1);
+			$time = strtotime($strTime);
+			
+			if(time() - $time > 1200) {
+				$status = "Down";
+				$errors[] = "Does not appear to be running!";
+				$color = "red";
+			}
+		}
+	}
+	
+	return array('status' => $status, 'err' => $errors);
 }
 
 //returns config array (k => v) on success, or false on failure
 //if skip is set, it will skip parameters not in ghostParameters
 function ghostGetConfiguration($service_id, $skip = true) {
-	global $config;
+	global $config, $ghostParameters;
 	
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
@@ -218,11 +339,15 @@ function ghostGetConfiguration($service_id, $skip = true) {
 		$buffer = trim($buffer);
 		
 		if(strlen($buffer) > 3 && $buffer[0] != '#') {
-			$index = strpos($buffer, " = ");
+			$index = strpos($buffer, " =");
 			
 			if($index !== false) {
 				$key = trim(substr($buffer, 0, $index));
-				$val = trim(substr($buffer, $index + 3));
+				$val = "";
+				
+				if(strlen($buffer) > $index + 3) {
+					$val = trim(substr($buffer, $index + 3));
+				}
 				
 				if(!$skip || isset($ghostParameters[$key])) {
 					$array[$key] = $val;
@@ -233,6 +358,23 @@ function ghostGetConfiguration($service_id, $skip = true) {
 	
 	fclose($fh);
 	return $array;
+}
+
+//returns false if key is not bnet, or array('id' => bnet id, 'key' => subkey) if it is
+function ghostConfigurationBnetKey($key) {
+	if(substr($key, 0, 4) == "bnet" && ($index = strpos($key, "_")) !== false) {
+		$bnet_id = $key[4];
+		
+		if($bnet_id == "_") {
+			$bnet_id = 1;
+		}
+		
+		$subkey = substr($key, $index + 1);
+		
+		return array('id' => $bnet_id, 'key' => $subkey);
+	} else {
+		return false;
+	}
 }
 
 //returns array (bnet id => server) on success, or false on failure
@@ -246,45 +388,28 @@ function ghostGetBnet($service_id) {
 		return false;
 	}
 	
-	//read the configuration file
-	$fh = fopen($config['ghost_path'] . $id . "/ghost.cfg", 'r');
+	//process the configuration
+	$configuration = ghostGetConfiguration($service_id, false);
 	$array = array();
 	
-	while(($buffer = fgets($fh, 4096)) !== false) {
-		$buffer = trim($buffer);
-		
-		if(strlen($buffer) > 3 && $buffer[0] != '#') {
-			$index = strpos($buffer, " = ");
-			
-			if($index !== false) {
-				$key = trim(substr($buffer, 0, $index));
-				$val = trim(substr($buffer, $index + 3));
-				
-				$index = strpos($key, "_");
-				
-				if(substr($key, 0, 4) == "bnet" && $index !== false) {
-					$this_bnet_id = $key[4];
-					
-					if($this_bnet_id == "_") {
-						$this_bnet_id = 1;
-					}
-					
-					$subkey = substr($key, $index + 1);
-					
-					if($subkey == "server") {
-						$array[$this_bnet_id] = $val;
-					}
-				}
+	foreach($configuration as $k => $v) {
+		if(($bkey_info = ghostConfigurationBnetKey($k)) !== false) {
+			if($bkey_info['key'] == "server") {
+				$array[$bkey_info['id']] = $v;
 			}
 		}
 	}
 	
-	fclose($fh);
+	//sort by id
+	ksort($array);
+	
 	return $array;
 }
 
 //returns true on success or string error on failure
 function ghostAddBnet($service_id, $server) {
+	global $bnetParameters;
+	
 	//get next bnet id
 	$bnets = ghostGetBnet($service_id);
 	
@@ -294,7 +419,7 @@ function ghostAddBnet($service_id, $server) {
 	
 	$next_bnet_id = 1;
 	
-	for($bnets as $k => $v) {
+	foreach($bnets as $k => $v) {
 		if($k >= $next_bnet_id) {
 			$next_bnet_id = $k + 1;
 		}
@@ -314,11 +439,11 @@ function ghostAddBnet($service_id, $server) {
 	//add the bnet id
 	$array = array();
 	
-	foreach($bnetParameters as $k => $v) {
+	foreach($bnetParameters as $k => $p_info) {
 		if($k == "server") {
 			$array[$prestring . $k] = $server;
 		} else {
-			$array[$prestring . $k] = $v;
+			$array[$prestring . $k] = $p_info[1];
 		}
 	}
 	
@@ -329,6 +454,8 @@ function ghostAddBnet($service_id, $server) {
 
 //returns true on success or false on failure
 function ghostRemoveBnet($service_id, $bnet_id) {
+	global $bnetParameters;
+	
 	//decide what the prestring is
 	$prestring = "bnet{$bnet_id}_";
 	
@@ -351,7 +478,7 @@ function ghostRemoveBnet($service_id, $bnet_id) {
 
 //returns config array (k => v) on success, or false on failure
 function ghostGetBnetConfiguration($service_id, $bnet_id) {
-	global $config;
+	global $config, $bnetParameters;
 	
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
@@ -360,47 +487,66 @@ function ghostGetBnetConfiguration($service_id, $bnet_id) {
 		return false;
 	}
 	
-	//read the configuration file
-	$fh = fopen($config['ghost_path'] . $id . "/ghost.cfg", 'r');
+	//process the configuration
+	$configuration = ghostGetConfiguration($service_id, false);
 	$array = array();
 	
-	while(($buffer = fgets($fh, 4096)) !== false) {
-		$buffer = trim($buffer);
-		
-		if(strlen($buffer) > 3 && $buffer[0] != '#') {
-			$index = strpos($buffer, " = ");
-			
-			if($index !== false) {
-				$key = trim(substr($buffer, 0, $index));
-				$val = trim(substr($buffer, $index + 3));
-				
-				$index = strpos($key, "_");
-				
-				if(substr($key, 0, 4) == "bnet" && $index !== false) {
-					$this_bnet_id = $key[4];
-					
-					if($this_bnet_id == "_") {
-						$this_bnet_id = 1;
-					}
-					
-					$subkey = substr($key, $index + 1);
-					
-					if(isset($bnetParameters[$subkey]) && $this_bnet_id == $bnet_id) {
-						$array[$subkey] = $val;
-					}
-				}
-			}
+	foreach($configuration as $k => $v) {
+		if(($bkey_info = ghostConfigurationBnetKey($k)) !== false && $bkey_info['id'] == $bnet_id) {
+			$array[$bkey_info['key']] = $v;
 		}
 	}
 	
-	fclose($fh);
 	return $array;
+}
+
+//returns ghostReconfigure() result
+function ghostReconfigureBnet($service_id, $bnet_id, $array) {
+	//transform the array's keys to global keys that include bnet prefix
+	$prefix = "bnet{$bnet_id}_";
+	
+	if($bnet_id == 1) {
+		$prefix = "bnet_";
+	}
+	
+	$globalArray = array();
+	
+	foreach($array as $k => $v) {
+		$globalArray[$prefix . $k] = $v;
+	}
+	
+	return ghostReconfigure($service_id, $globalArray);
+}
+
+function ghostConfigurationComparatorHelper($x) {
+	global $ghostParameters, $bnetParameters;
+	
+	if(isset($ghostParameters[$x])) {
+		return indexInArray($x, $ghostParameters);
+	} else if(($bkey_info = ghostConfigurationBnetKey($x)) !== false) {
+		$bnet_id = $bkey_info['id'];
+		$subkey = $bkey_info['key'];
+		
+		if(isset($bnetParameters[$subkey])) {
+			return $bnet_id * 1000 + indexInArray($subkey, $bnetParameters);
+		} else {
+			return $bnet_id * 1000 + 999;
+		}
+	} else {
+		//put it at bottom
+		return 99999;
+	}
+}
+
+//determines order in configuration things should go
+function ghostConfigurationComparator($a, $b) {
+	return ghostConfigurationComparatorHelper($a) - ghostConfigurationComparatorHelper($b);
 }
 
 //returns true on success, false on failure
 //if remove is set, the keys of array will be removed instead of added
 function ghostReconfigure($service_id, $array, $remove = false) {
-	global $config;
+	global $config, $ghostParameters, $bnetParameters;
 	
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
@@ -409,40 +555,419 @@ function ghostReconfigure($service_id, $array, $remove = false) {
 		return false;
 	}
 	
-	//backup the existing configuration
-	$existingConfig = ghostGetConfiguration($service_id, false);
+	//get the existing configuration
+	$ghostConfiguration = ghostGetConfiguration($service_id, false);
 	
-	//write the configuration file
-	$fout = fopen($config['ghost_path'] . $id . "/ghost.cfg", 'w');
-	
-	if(!$remove) {
-		foreach($array as $k => $v) {
+	//modify the configuration based on input $array settings
+	foreach($array as $k => $v) {
+		if(!$remove) {
 			if(isset($ghostParameters[$k])) {
-				$v = ghostEscape($ghostParameters[$k][0], $ghostParameters[$k][1], $ghostParameters[$k][2], $v);
-				fwrite("$k = $v\n");
-			} else if(substr($k, 0, 4) == "bnet")) {
-				$index = strpos($k, "_");
-			
-				if($index !== false) {
-					$sub_key = substr($k, $index + 1);
-				
-					if(isset($bnetParameters[$sub_key])) {
-						$v = ghostEscape($bnetParameters[$sub_key][0], $ghostParameters[$sub_key][1], $ghostParameters[$sub_key][2], $v);
-						fwrite($fout, "$k = $v\n");
-					}
-				}
+				$ghostConfiguration[$k] = ghostEscape($ghostParameters[$k][0], $ghostParameters[$k][1], $ghostParameters[$k][2], $v);
+			} else if(($bkey_info = ghostConfigurationBnetKey($k)) !== false && isset($bnetParameters[$bkey_info['key']])) {
+				$subkey = $bkey_info['key'];
+				$ghostConfiguration[$k] = ghostEscape($bnetParameters[$subkey][0], $bnetParameters[$subkey][1], $bnetParameters[$subkey][2], $v);
+			}
+		} else {
+			if(isset($ghostConfiguration[$k])) {
+				unset($ghostConfiguration[$k]);
 			}
 		}
 	}
 	
-	foreach($existingConfig as $k => $v) {
-		if(!isset($array[$k])) {
-			fwrite("$k = $v\n");
+	//re-order the configuration so that the bnet id's start from 1 and go up incrementally
+	$curr_bnet_id = 0; //the bnet id counter
+	$seen_bnet_id = -1; //the last seen bnet id from the input
+	$reorderedConfiguration = array();
+	
+	foreach($ghostConfiguration as $k => $v) {
+		if(($bkey_info = ghostConfigurationBnetKey($k)) !== false) {
+			$bnet_id = $bkey_info['id'];
+			$subkey = $bkey_info['key'];
+			
+			if($bnet_id != $seen_bnet_id) {
+				$curr_bnet_id++;
+				$seen_bnet_id = $bnet_id;
+			}
+			
+			if($bnet_id != $curr_bnet_id) {
+				if($curr_bnet_id == 1) {
+					$k = "bnet_$subkey";
+				} else {
+					$k = "bnet{$curr_bnet_id}_$subkey";
+				}
+			}
 		}
+		
+		$reorderedConfiguration[$k] = $v;
+	}
+	
+	//sort the configuration intelligently
+	uksort($reorderedConfiguration, 'ghostConfigurationComparator');
+	
+	//write the configuration out
+	$fout = fopen($config['ghost_path'] . $id . "/ghost.cfg", 'w');
+	
+	foreach($reorderedConfiguration as $k => $v) {
+		fwrite($fout, "$k = $v\n");
 	}
 	
 	fclose($fout);
 	return true;
+}
+
+//returns array of key => value
+function ghostGetConfigFromRequest(&$parameters, &$request) {
+	$array = array();
+	
+	foreach($parameters as $k => $param) { //param is array(type, default, default extra, description)
+		$form_k = "gcform_$k";
+		
+		//strings, integers, and select: add if it's set
+		if(($param[0] == 0 || $param[0] == 1 || $param[0] == 3) && isset($request[$form_k])) {
+			$array[$k] = $request[$form_k];
+		}
+		
+		//boolean variables: always set, and base on checkbox
+		else if($param[0] == 2) {
+			$array[$k] = isset($request[$form_k]) ? 1 : 0;
+		}
+	}
+	
+	return $array;
+}
+
+//returns string on failure or true on success
+//if mapcfg is true, this will be written to the mapcfgs directory and will accept new files
+function ghostUpdateFile($service_id, $filename, $content, $mapcfg = false) {
+	global $config, $updatableFiles;
+	
+	//limit writable length
+	if(strlen($content) > 100000) {
+		return;
+	}
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return;
+	}
+	
+	$pass = in_array($filename, $updatableFiles);
+	$target = $config['ghost_path'] . $id . "/" . $filename;
+	
+	if($mapcfg) {
+		$filename = escapeFile($filename);
+		$target = $config['ghost_path'] . $id . "/mapcfgs/" . $filename;
+		$pass = true;
+		
+		if(!file_exists($target)) {
+			//make sure didn't exceed limit on mapcfgs
+			$cfgLimit = getServiceParam($service_id, "mclimit");
+	
+			if($cfgLimit === false) {
+				$cfgLimit = 200;
+			}
+			
+			$pass = dirCount($config['ghost_path'] . $id . "/mapcfgs/") <= $cfgLimit;
+		}
+	}
+	
+	if($pass) {
+		$content = str_replace("\r", "", $content);
+		$fout = fopen($target, 'w');
+		fwrite($fout, $content);
+		fclose($fout);
+	}
+}
+
+//returns string file content
+function ghostDisplayFile($service_id, $filename, $mapcfg = false) {
+	global $config, $updatableFiles;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: failed to load file!";
+	}
+	
+	if(!$mapcfg && in_array($filename, $updatableFiles)) {
+		return file_get_contents($config['ghost_path'] . $id . "/" . $filename);
+	} else if($mapcfg) {
+		$filename = escapeFile($filename);
+		
+		if(getExtension($filename) != "cfg") {
+			return "Error: bad filename. Incident has been reported to administration.";
+		} else if(file_exists($config['ghost_path'] . $id . "/mapcfgs/" . $filename)) {
+			return file_get_contents($config['ghost_path'] . $id . "/mapcfgs/" . $filename);
+		} else {
+			return "This map configuration file does not exist.";
+		}
+	} else {
+		return "Error: failed to load file!";
+	}
+}
+
+//adds a map from repository
+//true on success, string on failure
+function ghostMapLink($service_id, $filename) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: the identifier for this service is not set.";
+	}
+	
+	//escape the map
+	$filename = escapeFile(baseName($filename));
+	
+	//determine the source and target files
+	$source = $config['ghost_path'] . "maps/" . $filename;
+	$target = $config['ghost_path'] . $id . "/maps/" . $filename;
+	
+	//if source doesn't exist or target exists
+	if(!file_exists($source)) {
+		return "Error: the requested file does not exist.";
+	} else if(file_exists($target)) {
+		return "Error: you already have a map with the same filename.";
+	}
+	
+	//create the symlink
+	$result = symlink($source, $target);
+	
+	if($result === false) {
+		return "Error: could not link the files. Please contact support.";
+	} else {
+		return true;
+	}
+}
+
+//true on success, string error on failure
+//$files is the $_FILES array
+function ghostMapUpload($service_id, $files) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: the identifier for this service is not set.";
+	}
+	
+	//make sure didn't exceed limit on maps
+	$mapLimit = getServiceParam($service_id, "mlimit");
+	
+	if($mapLimit === false) {
+		$mapLimit = 1000;
+	}
+	
+	$num_maps = dirCount($config['ghost_path'] . $id . "/maps");
+	if($num_maps > $mapLimit) {
+		return "You have exceeded the limit on the number of maps. Please contact support.";
+	}
+
+	if((!empty($files["uploaded_file"])) && ($files['uploaded_file']['error'] == 0)) {
+	    //Check if the file is a map and it's size is less than 10MB
+	    $filename = basename($files['uploaded_file']['name']);
+	    $ext = getExtension($filename);
+	    
+	    if (($ext == "w3x" || $ext == "w3m") && ($files["uploaded_file"]["size"] < 10000000)) {
+	        //Determine the path to which we want to save this file
+	        $newname = $config['ghost_path'] . $id . "/maps/" . escapeFile($filename);
+	        //Check if the file with the same name is already exists on the server
+	        if (!file_exists($newname)) {
+	            //Attempt to move the uploaded file to it's new place
+	            if ((move_uploaded_file($files['uploaded_file']['tmp_name'], $newname))) {
+	                return true;
+	            } else {
+	                return "Error: could not move the uploaded file.";
+	            }
+	        } else {
+	            return "Error: a map with the same filename already exists!";
+	        }
+	    } else {
+	        return "Error: Only .w3x or .w3m map files under 10MB can be uploaded. Please contact support.";
+	    }
+    } else {
+        return "No file was uploaded, or there was an error during the upload.";
+    }
+}
+
+//deletes a map
+// if mapcfg is set, it will delete the map configuration file
+function ghostMapDelete($service_id, $filename, $mapcfg = false) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: the identifier for this service is not set.";
+	}
+	
+	//escape the map
+	$filename = escapeFile(baseName($filename));
+	$target = $config['ghost_path'] . $id . ($mapcfg ? "/mapcfgs/" : "/maps/") . $filename;
+	
+	if(file_exists($target)) {
+		unlink($target);
+	}
+}
+
+//lists maps on the server
+//source is one of "maps", "repository", and "mapcfgs"
+// repository: load maps from common repository in ghost_path/maps/
+function ghostMapList($service_id, $source = "maps") {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: the identifier for this service is not set.";
+	}
+	
+	//ok iterate through maps
+	$extensions = array("w3x", "w3m");
+	
+	if($source == "repository") {
+		$dir = new DirectoryIterator($config['ghost_path'] . "maps");
+	} else if($source == "maps") {
+		$dir = new DirectoryIterator($config['ghost_path'] . $id . "/maps");
+	} else if($source == "mapcfgs") {
+		$dir = new DirectoryIterator($config['ghost_path'] . $id . "/mapcfgs");
+		$extensions = array("cfg");
+	} else {
+		return "Error: bad source to ghostMapList.";
+	}
+	
+	$array = array();
+	foreach($dir as $file) {
+		if($file->isFile()) {
+			$ext = getExtension($file->getFilename());
+			
+			if(in_array($ext, $extensions)) {
+		    	array_push($array, $file->getFilename());
+		    }
+		}
+	}
+
+	sort($array);
+	return $array;
+}
+
+//download a map
+function ghostMapDownload($service_id, $filename, $repository = false) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return;
+	}
+	
+	//escape the map
+	$filename = escapeFile(baseName($filename));
+	
+	if($repository) {
+		$target = $config['ghost_path'] . "maps/" . $filename;
+	} else {
+		$target = $config['ghost_path'] . $id . "/maps/" . $filename;
+	}
+	
+	fileDownload($target);
+}
+
+function ghostReplayList($service_id) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: the identifier for this service is not set.";
+	}
+	
+	//ok iterate through replays
+	$dir = new DirectoryIterator($config['ghost_path'] . $id . "/replays");
+	
+	$array = array();
+	foreach($dir as $file) {
+		if($file->isFile()) {
+			$ext = getExtension($file->getFilename());
+			
+			if($ext == "w3g") {
+		    	array_push($array, $file->getFilename());
+		    }
+		}
+	}
+
+	sort($array);
+	return $array;
+}
+
+//deletes a replay
+function ghostReplayDelete($service_id, $replay) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: the identifier for this service is not set.";
+	}
+	
+	//escape the replay
+	$replay = escapeFile(baseName($replay));
+	$target = $config['ghost_path'] . $id . "/replays/" . $replay;
+	
+	if(file_exists($target)) {
+		unlink($target);
+	}
+}
+
+//download a replay
+function ghostReplayDownload($service_id, $replay) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return;
+	}
+	
+	//escape the replay
+	$replay = escapeFile(baseName($replay));
+	$target = $config['ghost_path'] . $id . "/replays/" . $replay;
+	fileDownload($target);
+}
+
+//returns false if failed to read log, or array of lines on success
+function ghostGetLog($service_id, $numlines = 400) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: the identifier for this service is not set.";
+	}
+	
+	$log_file = $config['ghost_path'] . $id . '/ghost.log';
+	
+	if(!file_exists($log_file)) {
+		return false;
+	}
+	
+	//read last lines of the log file and scan for interesting things
+	$output_array = array();
+	exec("tail -n 1000 " . escapeshellarg($log_file), $output_array);
+	return $output_array;
 }
 
 //true on success, string error on failure
@@ -463,7 +988,7 @@ function ghostBotStart($service_id) {
 		return "Error: the bot is already online.";
 	}
 	
-	//make sure we didn't start too recently
+	//make sure we didn't start too recently to prevent Battle.net flooding
 	$last_time = getServiceParam($service_id, "start_time2");
 	
 	if($last_time !== false && $last_time != 0 && time() - $last_time < 900) {
@@ -481,7 +1006,10 @@ function ghostBotStart($service_id) {
 	return true;
 }
 
-function ghostBotStop($service_id, $ignore_warning = false) {
+//if restart is set, it will:
+// a) allow stopping the bot even if nostop flag is set
+// b) ignore warning if bot is already offline according to PID
+function ghostBotStop($service_id, $restart = false) {
 	global $config;
 	
 	//get the identifier
@@ -491,19 +1019,32 @@ function ghostBotStop($service_id, $ignore_warning = false) {
 		return "Error: failed to find identifier. Perhaps this isn't a GHost service?";
 	}
 	
+	//make sure we are allowed to stop the bot
+	if(!$restart) {
+		$nostop = getServiceParam($service_id, "nostop");
+	
+		if($nostop) {
+			return "Error: you are not allowed to stop this bot. Use restart instead.";
+		}
+	}
+	
 	//get the pid
 	$pid = stripAlphaNumeric(getServiceParam($service_id, "pid"));
 	
 	if($pid === false || $pid == 0) {
-		if($ignore_warning) {
+		if($restart) {
 			return true;
 		} else {
 			return "Error: the bot is already offline.";
 		}
 	}
 	
-	//stop the bot
-	exec("kill -s INT $pid");
+	//stop the bot, but make sure PID is still of GHost
+	$result = exec("cat /proc/$pid/cmdline");
+	
+	if(stripos($result, 'ghost') !== false) {
+		exec("kill -s INT $pid");
+	}
 	
 	//reset the pid
 	setServiceParam($service_id, "pid", 0);
@@ -519,6 +1060,37 @@ function ghostBotRestart($service_id) {
 	} else {
 		return $result;
 	}
+}
+
+//STYLE FUNCTIONS
+function ghostDisplayConfiguration($k, $v, $parameters) {
+	$form_k = htmlspecialchars("gcform_$k");
+	$type = $parameters[$k][0];
+	$options = $parameters[$k][2];
+	$description = $parameters[$k][3];
+	?>
+	<tr>
+		<td><?= htmlspecialchars($k) ?></td>
+		<td>
+		<? if($type == 0 || $type == 1) { ?>
+			<input type="text" name="<?= $form_k ?>" value="<?= htmlspecialchars($v) ?>" style="align:left;" />
+		<? } else if($type == 2) {
+			$checked = $v == 1 ? " checked" : ""; ?>
+			<input type="checkbox" name="<?= $form_k ?>" value="<?= 1 ?>"<?= $checked ?> />
+		<? } else if($type == 3) { ?>
+			<select name="<?= $form_k ?>">
+			<?
+			foreach($options as $option => $option_desc) {
+				$selected = $v == $option ? " selected" : ""; //determine if this option is selected
+				?>
+				<option value="<?= htmlspecialchars($option) ?>"<?= $selected ?>><?= htmlspecialchars($option_desc) ?></option>
+			<? } ?>
+			</select>
+		<? } ?>
+		</td>
+		<td><?= htmlspecialchars($description) ?></td>
+	</tr>
+	<?
 }
 
 ?>

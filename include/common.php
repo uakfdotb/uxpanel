@@ -21,6 +21,35 @@ function getExtension($file_name) {
   return substr(strrchr($file_name,'.'),1);  
 }
 
+function indexInArray($value, $array) {
+	$counter = 0;
+	
+	foreach($array as $k => $v) {
+		if($k == $value) {
+			return $counter;
+		} else {
+			$counter++;
+		}
+	}
+	
+	return -1;
+}
+
+function escapeFile($fname) {
+    $replace="_";
+    $pattern="/([[:alnum:]_\.\- \(\)]*)/";
+    return str_replace(str_split(preg_replace($pattern,$replace,$fname)),$replace,$fname);
+}
+
+function dirCount($dir_str) {
+    $dir = new DirectoryIterator($dir_str);
+    $x = 0;
+    foreach($dir as $file ){
+        $x ++;
+    }
+    return $x;
+}
+
 function uid($length) {
 	$characters = "0123456789abcdefghijklmnopqrstuvwxyz";
 	$string = "";	
@@ -167,6 +196,22 @@ function dateString($time = -1) {
 	return date($config['format_date'], $time);
 }
 
+function fileDownload($file_path) {
+	if(file_exists($file_path)) {
+		header('Content-Description: File Transfer');
+		header('Content-Type: application/octet-stream');
+		header('Content-Disposition: attachment; filename="'.basename($file_path).'"');
+		header('Content-Transfer-Encoding: binary');
+		header('Expires: 0');
+		header('Cache-Control: must-revalidate');
+		header('Pragma: public');
+		header('Content-Length: ' . filesize($file_path));
+		ob_clean();
+		flush();
+		readfile($file_path);
+	}
+}
+
 function ux_mail($subject, $body, $to) { //returns true=ok, false=notok
 	$config = $GLOBALS['config'];
 	$from = $config['mail_fromname'] . "<" . filter_var($config['mail_from'], FILTER_VALIDATE_EMAIL) . ">";
@@ -216,15 +261,21 @@ function get_page($page, $context, $args = array()) {
 	$timeString = timeString();
 	$basePath = basePath();
 	
+	if(!isset($service_id)) {
+		$service_id = -1;
+	}
+	
 	//figure out what tabs to display in navbar
 	if($context == "main") {
 		$navbar = array();
 	} else if($context == "ghost") {
-		$navbar = array('./' => "Status", 'config.php' => "Configuration", 'map.php' => "Manage maps", 'execute.php' => "Execute command", 'log.php' => "View log", 'replay.php' => "Manage replays", '../panel/index.php?action=logout' => "Logout");
+		$navbar = array("./?id=$service_id" => "Status", "config.php?id=$service_id" => "Configuration", "map.php?id=$service_id" => "Manage maps", "mapcfg.php?id=$service_id" => "Map configurations", "log.php?id=$service_id" => "View log", "replay.php?id=$service_id" => "Manage replays", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
+	} else if($context == "channel") {
+		$navbar = array("./?id=$service_id" => "Status", "config.php?id=$service_id" => "Configuration", "log.php?id=$service_id" => "View log", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
 	} else if($context == "panel") {
-		$navbar = array('./' => "Home", 'services.php' => "Services", 'announce.php' => "Announcements", 'index.php?action=logout' => "Logout");
+		$navbar = array('./' => "Home", 'account.php' => "Account", 'services.php' => "Services", 'announce.php' => "Announcements", 'index.php?action=logout' => "Logout");
 	} else if($context == "database") {
-		$navbar = array('./' => "Home", 'current.php' => 'Running games', 'games.php' => 'Game log', 'bans.php' => 'Ban management', 'admins.php' => 'Admins', '../panel/index.php?action=logout' => "Logout");
+		$navbar = array("./?id=$service_id" => "Home", "current.php?id=$service_id" => 'Running games', "games.php?id=$service_id" => 'Game log', "bans.php?id=$service_id" => 'Ban management', "admins.php?id=$service_id" => 'Admins', "execute.php?id=$service_id" => "Execute command", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
 	} else if($context == "admin") {
 		$navbar = array('./' => "Home", 'accounts.php' => "Accounts", 'status.php' => "Status", 'announce.php' => "Announcements", 'index.php?action=logout' => "Logout");
 	} else {
@@ -364,6 +415,107 @@ substr(PHP_OS, 0, 3) !== 'WIN'))
       @fclose($handle);
    
    return substr($str, 0, $len);
+}
+
+# LOCK
+//returns boolean: true=proceed, false=lock up; the difference between this and lockAction is that this can be used for repeated tasks, like admin
+// then, only if action was unsuccessful would lockAction be called
+function checkLock($action) {
+	global $config;
+	$lock_time_initial = $config['lock_time_initial'];
+	$lock_time_overload = $config['lock_time_overload'];
+	$lock_count_overload = $config['lock_count_overload'];
+	$lock_time_reset = $config['lock_time_reset'];
+	$lock_time_max = $config['lock_time_max'];
+	
+	if(!isset($lock_time_initial[$action])) {
+		return true; //well we can't do anything...
+	}
+	
+	$ip = escape($_SERVER['REMOTE_ADDR']);
+	$action = escape($action);
+	
+	$result = mysql_query("SELECT id,time,num FROM locks WHERE ip='" . $ip . "' AND action='" . $action . "'") or die(mysql_error());
+	if($row = mysql_fetch_array($result)) {
+		$id = $row['id'];
+		$time = $row['time'];
+		$count = $row['num']; //>=0 count means it's a regular initial lock; -1 count means overload lock
+
+		if($count >= 0) {
+			if(time() <= $time + $lock_time_initial[$action]) {
+				return false;
+			}
+		} else {
+			if(time() <= $time + $lock_time_overload[$action]) {
+				return false;
+			}
+		}
+	}
+	
+	return true;
+}
+
+//returns boolean: true=proceed, false=lock up
+function lockAction($action) {
+	global $config;
+	$lock_time_initial = $config['lock_time_initial'];
+	$lock_time_overload = $config['lock_time_overload'];
+	$lock_count_overload = $config['lock_count_overload'];
+	$lock_time_reset = $config['lock_time_reset'];
+	$lock_time_max = $config['lock_time_max'];
+	
+	if(!isset($lock_time_initial[$action])) {
+		return true; //well we can't do anything...
+	}
+	
+	$ip = escape($_SERVER['REMOTE_ADDR']);
+	$action = escape($action);
+	$replace_id = -1;
+
+	//first find records with ip/action
+	$result = mysql_query("SELECT id,time,num FROM locks WHERE ip='" . $ip . "' AND action='" . $action . "'") or die(mysql_error());
+	if($row = mysql_fetch_array($result)) {
+		$id = $row['id'];
+		$time = $row['time'];
+		$count = $row['num']; //>=0 count means it's a regular initial lock; -1 count means overload lock
+
+		if($count >= 0) {
+			if(time() <= $time + $lock_time_initial[$action]) {
+				return false;
+			} else if(time() > $time + $lock_time_reset) {
+				//this entry is old, but use it to replace
+				$replace_id = $id;
+			} else {
+				//increase the count; maybe initiate an OVERLOAD
+				$count = $count + 1;
+				if($count >= $lock_count_overload[$action]) {
+					mysql_query("UPDATE locks SET num='-1', time='" . time() . "' WHERE ip='" . $ip . "'") or die(mysql_error());
+					return false;
+				} else {
+					mysql_query("UPDATE locks SET num='" . $count . "', time='" . time() . "' WHERE ip='" . $ip . "'") or die(mysql_error());
+				}
+			}
+		} else {
+			if(time() <= $time + $lock_time_overload[$action]) {
+				return false;
+			} else {
+				//their overload is over, so this entry is old
+				$replace_id = $id;
+			}
+		}
+	} else {
+		mysql_query("INSERT INTO locks (ip, time, action, num) VALUES ('" . $ip . "', '" . time() . "', '" . $action . "', '1')") or die(mysql_error());
+	}
+
+	if($replace_id != -1) {
+		mysql_query("UPDATE locks SET num='1', time='" . time() .  "' WHERE id='" . $replace_id . "'") or die(mysql_error());
+	}
+
+	//some housekeeping
+	$delete_time = time() - $lock_time_max;
+	mysql_query("DELETE FROM locks WHERE time<='" . $delete_time . "'");
+
+	return true;
 }
 
 ?>

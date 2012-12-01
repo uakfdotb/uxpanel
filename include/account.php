@@ -30,7 +30,7 @@ function adminGetAccounts() {
 	$accounts = array();
 	
 	while($row = mysql_fetch_row($result)) {
-		$accounts[$row[0]] = array($row[1], $row[2]);
+		$accounts[$row[0]] = array('email' => $row[1], 'name' => $row[2]);
 	}
 	
 	return $accounts;
@@ -44,7 +44,7 @@ function adminGetAccount($id) {
 	$result = mysql_query("SELECT email, name FROM accounts WHERE id = '$id'", $db);
 	
 	if($row = mysql_fetch_array($result)) {
-		return array($row[0], $row[1]);
+		return array('email' => $row[0], 'name' => $row[1]);
 	} else {
 		return array("User not found", "User not found");
 	}
@@ -59,7 +59,7 @@ function createService($account_id, $service_name, $service_description, $servic
 	$service_type = escape($service_type);
 	
 	mysql_query("INSERT INTO services (account_id, name, description, type) VALUES ('$account_id', '$service_name', '$service_description', '$service_type')", $db);
-	$service_id = escape(mysql_insert_id());
+	$service_id = intval(mysql_insert_id());
 	
 	foreach($service_param as $key => $val) {
 		$key = escape($key);
@@ -83,7 +83,7 @@ function getServiceType($service_id) {
 	}
 }
 
-//returns array of array(service id, name, description, type)
+//returns array of array(id, name, description, type)
 function getServices($account_id) {
 	global $db;
 	
@@ -92,59 +92,103 @@ function getServices($account_id) {
 	$array = array();
 	
 	while($row = mysql_fetch_row($result)) {
-		$array[] = array($row[0], $row[1], $row[2], $row[3]);
+		$array[] = array('id' => $row[0], 'name' => $row[1], 'description' => $row[2], 'type' => $row[3]);
 	}
 	
 	return $array;
 }
 
-//returns extra service parameters for an array of services
+//returns false on failure or array(name, description, type)
+function getService($service_id) {
+	global $db;
+	
+	$service_id = escape($service_id);
+	$result = mysql_query("SELECT name, description, type FROM services WHERE id = '$service_id'", $db);
+	
+	if($row = mysql_fetch_array($result)) {
+		return array('name' => $row[0], 'description' => $row[1], 'type' => $row[2]);
+	} else {
+		return false;
+	}
+}
+
+//deletes a service
+function removeService($service_id) {
+	global $db;
+	
+	$service_id = escape($service_id);
+	mysql_query("DELETE FROM services WHERE id = '$service_id'");
+	mysql_query("DELETE FROM service_params WHERE service_id = '$service_id'");
+}
+
+//returns the account id associated with a service, or false on failure
+function getServiceOwner($service_id) {
+	global $db;
+	$service_id = escape($service_id);
+	$result = mysql_query("SELECT account_id FROM services WHERE id = '$service_id'");
+	
+	if($row = mysql_fetch_array($result)) {
+		return $row[0];
+	} else {
+		return false;
+	}
+}
+
+//returns specific extra service parameters for an array of services
 //format is array of service id => array of k => v
+//parameters returned: price, due, link
 function getServiceExtra($services) {
 	$serviceExtra = array();
 	
 	foreach($services as $service) {
-		$price = getServiceParam($service[0], 'price');
+		$price = getServiceParam($service['id'], 'price');
 		
 		if($price === false) {
 			$price = "Unknown";
 		}
 		
-		$due = getServiceParam($service[0], 'due');
+		$due = getServiceParam($service['id'], 'due');
 		
 		if($due === false) {
 			$due = "Unknown";
 		}
 		
-		$link = "#";
+		$preLink = "service_redirect.php?";
 		
-		if($services[3] == "ghost") {
-			$link = "../ghost/index.php?id={$services[0]}";
-		} else if($services[3] == "channel") {
-			$link = "../channel/index.php?id={$services[0]}";
-		} else if($services[3] == "database") {
-			$link = "../database/index.php?id={$services[0]}";
+		if(($linkParam = getServiceParam($service['id'], 'link')) !== false) {
+			$preLink = $linkParam;
 		}
 		
-		$serviceExtra[$service[0]] = array('price' => $price, 'due' => $due, 'link' => $link);
+		$link = $preLink . "id=" . $service['id'];
+		
+		$serviceExtra[$service['id']] = array('price' => $price, 'due' => $due, 'link' => $link);
 	}
 	
 	return $serviceExtra;
 }
 
+//sets a key, val pair parameter for a certain service
+// or deletes if val = false
 function setServiceParam($service_id, $key, $val) {
 	global $db;
 	
 	$service_id = escape($service_id);
 	$key = escape($key);
-	$val = escape($val);
+	
+	if($val !== false) {
+		$val = escape($val);
+	}
 	
 	//check if key exists already (in that case just update the existing one)
 	$result = mysql_query("SELECT id FROM service_params WHERE service_id = '$service_id' AND k = '$key'", $db);
 	
 	if($row = mysql_fetch_array($result)) {
-		mysql_query("UPDATE service_params SET v = '$val' WHERE id = '{$row[0]}'", $db);
-	} else {	
+		if($val !== false) {
+			mysql_query("UPDATE service_params SET v = '$val' WHERE id = '{$row[0]}'", $db);
+		} else {
+			mysql_query("DELETE FROM service_params WHERE id = '{$row[0]}'", $db);
+		}
+	} else if($val !== false) {	
 		mysql_query("INSERT INTO service_params (service_id, k, v) VALUES ('$service_id', '$key', '$val')", $db);
 	}
 }
@@ -161,6 +205,21 @@ function getServiceParam($service_id, $key) {
 	} else {
 		return false;
 	}
+}
+
+//gets all service params as an array of k => v
+function getServiceParams($service_id) {
+	global $db;
+	
+	$service_id = escape($service_id);
+	$result = mysql_query("SELECT k, v FROM service_params WHERE service_id = '$service_id'", $db);
+	$array = array();
+	
+	while($row = mysql_fetch_array($result)) {
+		$array[$row[0]] = $row[1];
+	}
+	
+	return $array;
 }
 
 ?>

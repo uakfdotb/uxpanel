@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['initiated'])) {
+if (!isset($_SESSION['initiated']) || !isset($_SESSION['active']) || time() - $_SESSION['active'] > 1200) {
 	session_unset();
 	session_regenerate_id();
 	$_SESSION['initiated'] = true;
@@ -25,6 +25,20 @@ if(isset($_SESSION['site_name'])) {
 	}
 } else {
 	$_SESSION['site_name'] = $config['site_name'];
+}
+
+$_SESSION['active'] = time();
+
+//CSRF guard library
+include(includePath() . "/csrfguard.php");
+
+//handle noredirect option
+if(isset($_REQUEST['noredirect'])) {
+	if($_REQUEST['noredirect'] === "false") {
+		unset($_SESSION['noredirect']);
+	} else if($_REQUEST['noredirect'] === "true") {
+		$_SESSION['noredirect'] = true;
+	}
 }
 
 ?>

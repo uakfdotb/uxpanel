@@ -7,7 +7,11 @@ Title: <input type="text" name="title" />
 </form>
 
 <? foreach($announcements as $e) { //e is array(id, title, body, time) ?>
-<h2><?= $e[1] ?> (<?= $e[3] ?>)</h2>
-<?= $e[2] ?>
-<p><a href="announce.php?action=delete&delete_id=<?= $e[0] ?>">(delete)</a></p>
+<h2><?= htmlspecialchars($e['title']) ?> (<?= htmlspecialchars($e['time']) ?>)</h2>
+<?= $e['body'] ?>
+<form method="post" action="announce.php">
+<input type="hidden" name="action" value="delete" />
+<input type="hidden" name="delete_id" value="<?= $e['id'] ?>" />
+<input type="submit" value="(delete)" />
+</form>
 <? } ?>

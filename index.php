@@ -9,8 +9,8 @@ include("include/auth.php");
 
 if(isset($_SESSION['account_id'])) {
 	header("Location: panel/");
-} else if(isset($_REQUEST['email']) && isset($_REQUEST['password'])) {
-	$result = authAccount($_REQUEST['email'], $_REQUEST['password']);
+} else if(isset($_POST['email']) && isset($_POST['password'])) {
+	$result = authAccount($_POST['email'], $_POST['password']);
 	
 	if($result === true) {
 		header("Location: panel/");
@@ -28,7 +28,7 @@ if(isset($_SESSION['account_id'])) {
 		$message = $_REQUEST['message'];
 	}
 	
-	get_page("index", "main", array());
+	get_page("index", "main", array('message' => $message));
 }
 
 ?>

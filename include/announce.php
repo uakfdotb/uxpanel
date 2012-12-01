@@ -15,7 +15,7 @@ function announceDelete($id) {
 	mysql_query("DELETE FROM announcements WHERE id = '$id'", $db);
 }
 
-//returns a sorted array of (announcement id, title, body, time)
+//returns a sorted array of (id, title, body, time)
 function announceGet() {
 	global $config, $db;
 	
@@ -23,7 +23,7 @@ function announceGet() {
 	$array = array();
 	
 	while($row = mysql_fetch_row($result)) {
-		$array[] = array($row[0], $row[1], $row[2], date($config['format_date'], $row[3]));
+		$array[] = array('id' => $row[0], 'title' => $row[1], 'body' => $row[2], 'time' => date($config['format_date'], $row[3]));
 	}
 	
 	return $array;

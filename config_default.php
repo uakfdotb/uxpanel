@@ -47,4 +47,21 @@ $config['db_username'] = "root";
 # password
 $config['db_password'] = "";
 
+### ** lock configuration
+
+# the time in seconds a user must wait before trying again; otherwise they get locked out (count not increased)
+$config['lock_time_initial'] = array('checkuser' => 5, 'checkadmin' => 5);
+
+# the time that overloads last
+$config['lock_time_overload'] = array('checkuser' => 60*2, 'checkadmin' => 60*2);
+
+# the number of tries a user has (that passes the lock_time_initial test) before being locked by overload
+$config['lock_count_overload'] = array('checkuser' => 12, 'checkadmin' => 12);
+
+# if a previous lock found less than this many seconds ago, count++; otherwise old entry is replaced
+$config['lock_time_reset'] = 60;
+
+# max time to store locks in the database; this way we can clear old locks with one function
+$config['lock_time_max'] = 60*5;
+
 ?>

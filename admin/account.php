@@ -7,6 +7,7 @@ include("../include/dbconnect.php");
 
 include("../include/account.php");
 include("../include/ghost.php");
+include("../include/database.php");
 
 if(isset($_SESSION['admin']) && isset($_REQUEST['id'])) {
 	$account_id = $_REQUEST['id'];
@@ -16,29 +17,40 @@ if(isset($_SESSION['admin']) && isset($_REQUEST['id'])) {
 		$message = htmlentities($_REQUEST['message']);
 	}
 	
-	if(isset($_REQUEST['action'])) {
-		if($_REQUEST['action'] == "add" && isset($_REQUEST['name']) && isset($_REQUEST['description']) && isset($_REQUEST['type']) && isset($_REQUEST['identifier']) && isset($_REQUEST['due']) && isset($_REQUEST['price'])) {
-			$type = $_REQUEST['type'];
+	if(isset($_POST['action'])) {
+		if($_POST['action'] == "add" && isset($_POST['name']) && isset($_POST['description']) && isset($_POST['type']) && isset($_POST['identifier']) && isset($_POST['due']) && isset($_POST['price'])) {
+			$type = $_POST['type'];
 			
 			if($type == "ghost") {
 				$id3 = -1;
 				
-				if(isset($_REQUEST['id3']) && $_REQUEST['id3'] != "") {
-					$id3 = $_REQUEST['id3'];
+				if(isset($_POST['id3']) && $_POST['id3'] != "") {
+					$id3 = $_POST['id3'];
 				}
 				
-				$result = ghostAddService($account_id, $_REQUEST['name'], $_REQUEST['description'], $_REQUEST['identifier'], $id3);
+				$result = ghostAddService($account_id, $_POST['name'], $_POST['description'], $_POST['identifier'], $id3);
 				
 				if(is_integer($result)) {
-					setServiceParam($result, "due", $_REQUEST['due']);
-					setServiceParam($result, "price", $_REQUEST['price']);
+					setServiceParam($result, "due", $_POST['due']);
+					setServiceParam($result, "price", $_POST['price']);
 				} else {
-					header("Location: account.php?message=" . urlencode($result));
+					header("Location: account.php?id=$account_id&message=" . urlencode($result));
+				}
+			} else if($type == "database") {
+				$result = databaseAddService($account_id, $_POST['name'], $_POST['description'], $_POST['identifier']);
+				
+				if(is_integer($result)) {
+					setServiceParam($result, "due", $_POST['due']);
+					setServiceParam($result, "price", $_POST['price']);
+				} else {
+					header("Location: account.php?id=$account_id&message=" . urlencode("Error occurred while setting up database."));
 				}
 			}
+		} else if($_POST['action'] == "delete" && isset($_POST['delete_id'])) {
+			removeService($_POST['delete_id']);
 		}
 		
-		header("Location: account.php");
+		header("Location: account.php?id=$account_id");
 	}
 	
 	//account info
@@ -46,10 +58,10 @@ if(isset($_SESSION['admin']) && isset($_REQUEST['id'])) {
 	
 	//services
 	$services = getServices($account_id);
-	$serviceExtra = getServiceExtra($account_id);
+	$serviceExtra = getServiceExtra($services);
 	
 	//display
-	get_page("account", "admin", array('id' => $account_id, 'info' => $info, 'services' => $services, 'serviceExtra' => $serviceExtra));
+	get_page("account", "admin", array('id' => $account_id, 'info' => $info, 'services' => $services, 'serviceExtra' => $serviceExtra, 'message' => $message));
 } else {
 	header("Location: ./");
 }
