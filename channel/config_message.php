@@ -6,7 +6,7 @@ include("../include/session.php");
 include("../include/dbconnect.php");
 
 include("../include/account.php");
-include("../include/ghost.php");
+include("../include/channel.php");
 
 if(isset($_SESSION['account_id']) && isset($_REQUEST['id']) && is_numeric($_REQUEST['id']) && isset($_SESSION['is_' . $_REQUEST['id'] . '_channel'])) {
 	if(isset($_POST['action']) && $_POST['action'] == "update" && isset($_POST['filename']) && isset($_POST['content'])) {
