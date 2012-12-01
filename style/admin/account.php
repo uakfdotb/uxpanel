@@ -7,7 +7,8 @@
 <p>Email address: <?= htmlspecialchars($info['email']) ?>
 <br />Name: <?= htmlspecialchars($info['name']) ?></p>
 
-<form method="post" action="account.php?action=add&id=<?= $id ?>">
+<form method="post" action="account.php?id=<?= $id ?>">
+<input type="hidden" name="action" value="add" />
 Name: <input type="text" name="name" />
 <br />Description: <input type="text" name="description" />
 <br />Type: <input type="text" name="type" />

@@ -5,17 +5,44 @@
 # a unique name for this uxpanel instance
 $config['site_name'] = "UXPanel Unknown Site";
 
+# format to use for displaying times
+$config['format_time'] = "j M Y H:i:s T";
+
+# format to use for displaying dates
+$config['format_date'] = "j M Y";
+
+### ** GHost settings
+
 # path to GHost on server, with trailing slash
 $config['ghost_path'] = "/ghost/";
 
 # password to use for GHost users
 $config['ghost_password'] = "abc";
 
-# format to use for displaying times
-$config['format_time'] = "j M Y H:i:s T";
+# additional GHost parameters in ghost.cfg
+#$config['ghostParameters'] = array();
+#$config['bnetParameters'] = array();
 
-# format to use for displaying dates
-$config['format_date'] = "j M Y";
+# additional GHost parameters in default.cfg
+#$config['defaultParameters'] = array();
+
+# additional GHost editable files
+#$config['updatableFiles'] = array();
+
+### ** channel settings
+
+# path to channel on server, with trailing slash
+$config['channel_path'] = "/channel/";
+
+# additional channel parameters in chop.cfg
+#$config['channelParameters'] = array();
+#$config['defaultChannelParameters'] = array();
+
+# additional pychop plugins
+#$config['channelPlugins'] = array();
+
+# additional pychop editable files
+#$config['channelUpdatableFiles'] = array();
 
 ### ** email information
 

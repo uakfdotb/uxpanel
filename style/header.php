@@ -25,7 +25,7 @@
       <div class="navbar-inner">
         <div class="container">
           <a class="brand" href="./">uxpanel</a>
-          <div class="nav-collapse collapse">
+          <div class="nav">
             <ul class="nav">
               <? foreach($navbar as $i_page => $desc) { ?>
                 <li <? if($page == $i_page) echo "active"; ?>><a href="<?= $i_page ?>"><?= $desc ?></a></li>

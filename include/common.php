@@ -269,13 +269,13 @@ function get_page($page, $context, $args = array()) {
 	if($context == "main") {
 		$navbar = array();
 	} else if($context == "ghost") {
-		$navbar = array("./?id=$service_id" => "Status", "config.php?id=$service_id" => "Configuration", "map.php?id=$service_id" => "Manage maps", "mapcfg.php?id=$service_id" => "Map configurations", "log.php?id=$service_id" => "View log", "replay.php?id=$service_id" => "Manage replays", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
+		$navbar = array("./?id=$service_id" => "Status", "config.php?id=$service_id" => "Configuration", "map.php?id=$service_id" => "Maps", "mapcfg.php?id=$service_id" => "Map configurations", "log.php?id=$service_id" => "Log", "replay.php?id=$service_id" => "Replays", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
 	} else if($context == "channel") {
 		$navbar = array("./?id=$service_id" => "Status", "config.php?id=$service_id" => "Configuration", "log.php?id=$service_id" => "View log", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
 	} else if($context == "panel") {
 		$navbar = array('./' => "Home", 'account.php' => "Account", 'services.php' => "Services", 'announce.php' => "Announcements", 'index.php?action=logout' => "Logout");
 	} else if($context == "database") {
-		$navbar = array("./?id=$service_id" => "Home", "current.php?id=$service_id" => 'Running games', "games.php?id=$service_id" => 'Game log', "bans.php?id=$service_id" => 'Ban management', "admins.php?id=$service_id" => 'Admins', "execute.php?id=$service_id" => "Execute command", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
+		$navbar = array("./?id=$service_id" => "Home", "current.php?id=$service_id" => 'Running games', "games.php?id=$service_id" => 'Game log', "bans.php?id=$service_id" => 'Bans', "admins.php?id=$service_id" => 'Admins', "execute.php?id=$service_id" => "Execute command", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
 	} else if($context == "admin") {
 		$navbar = array('./' => "Home", 'accounts.php' => "Accounts", 'status.php' => "Status", 'announce.php' => "Announcements", 'index.php?action=logout' => "Logout");
 	} else {

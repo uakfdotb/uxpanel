@@ -316,7 +316,7 @@ function ghostGetStatus($service_id) {
 		}
 	}
 	
-	return array('status' => $status, 'err' => $errors);
+	return array('status' => $status, 'err' => $errors, 'color' => $color);
 }
 
 //returns config array (k => v) on success, or false on failure
@@ -996,7 +996,7 @@ function ghostBotStart($service_id) {
 	}
 	
 	//start the bot
-	$pid = shell_exec("nohup cd {$config['ghost_path']}$id && ./ghost++ ghost.cfg > /dev/null 2>&1 & echo $!");
+	$pid = shell_exec("cd {$config['ghost_path']}$id && nohup ./ghost++ ghost.cfg > /dev/null 2>&1 & echo $!");
 	
 	//save the pid and last start time
 	setServiceParam($service_id, "pid", $pid);
@@ -1056,10 +1056,46 @@ function ghostBotRestart($service_id) {
 	$result = ghostBotStop($service_id, true);
 	
 	if($result === true) {
+		sleep(1);
 		return ghostBotStart($service_id);
 	} else {
 		return $result;
 	}
+}
+
+function ghostSetDatabase($service_id, $db_settings) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return false;
+	}
+	
+	//read/write the configuration file
+	$fin = fopen($config['ghost_path'] . $id . "/default.cfg", 'r');
+	$fout = fopen($config['ghost_path'] . $id . "/default.cfg_", 'w');
+	
+	while(($buffer = fgets($fin, 4096)) !== false) {
+		$buffer = trim($buffer);
+		
+		if(strpos($buffer, "db_mysql_database") !== false) {
+			fwrite($fout, "db_mysql_database = {$db_settings['name']}\n");
+		} else if(strpos($buffer, "db_mysql_server") !== false) {
+			fwrite($fout, "db_mysql_server = {$db_settings['server']}\n");
+		} else if(strpos($buffer, "db_mysql_user") !== false) {
+			fwrite($fout, "db_mysql_user = {$db_settings['username']}\n");
+		} else if(strpos($buffer, "db_mysql_password") !== false) {
+			fwrite($fout, "db_mysql_password = {$db_settings['password']}\n");
+		} else {
+			fwrite($fout, $buffer . "\n");
+		}
+	}
+	
+	fclose($fin);
+	fclose($fout);
+	rename($config['ghost_path'] . $id . "/default.cfg_", $config['ghost_path'] . $id . "/default.cfg");
 }
 
 //STYLE FUNCTIONS

@@ -13,6 +13,22 @@ function databaseAddService($account_id, $service_name, $service_description, $i
 	return $service_id;
 }
 
+//returns array settings on success
+// ('name' => db_name, 'server' => db_server, 'username' => db_username, 'password' => db_password)
+//or false on failure
+function databaseSettings($service_id) {
+	$db_name = getServiceParam($service_id, 'db_name');
+	$db_host = getServiceParam($service_id, 'db_host');
+	$db_username = getServiceParam($service_id, 'db_username');
+	$db_password = getServiceParam($service_id, 'db_password');
+	
+	if($db_name !== false && $db_host !== false && $db_username !== false && $db_password !== false) {
+		return array('name' => $db_name, 'server' => $db_host, 'username' => $db_username, 'password' => $db_password);
+	} else {
+		return false;
+	}
+}
+
 //returns false on failure, or link identifier on success
 function databaseConnect($service_id) {
 	# if this connection has already been made, just use the existing one
