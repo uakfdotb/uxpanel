@@ -1,6 +1,7 @@
 <h1>Account manager</h1>
 
-<form method="post" action="accounts.php?action=register">
+<form method="post" action="accounts.php">
+<input type="hidden" name="action" value="register" />
 Email address: <input type="text" name="email" />
 <br />Password: <input type="text" name="password" />
 <br />Name: <input type="text" name="name" />
