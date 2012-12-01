@@ -81,7 +81,7 @@ function databaseSetup($service_id, $reset = false) {
 			
 			if(strlen($buffer) > 0 && $buffer[0] != "#") {
 				if(strpos($buffer, ";") !== false) {
-					mysql_query($query_buffer . $buffer);
+					mysql_query($query_buffer . $buffer, $link);
 					$query_buffer = "";
 				} else {
 					$query_buffer .= $buffer . " ";
@@ -430,12 +430,12 @@ function databaseNameLookup($service_id, $ip) {
 		
 		if($counter >= 2) {
 			$safe_ip = escape($safe_ip);
-			$result = mysql_query("SELECT DISTINCT name, spoofedrealm FROM gameplayers WHERE ip LIKE '$safe_ip%' LIMIT 20");
+			$result = mysql_query("SELECT DISTINCT name, spoofedrealm FROM gameplayers WHERE ip LIKE '$safe_ip%' LIMIT 20", $link);
 		}
 	}
 	
 	if($result === false) {
-		$result = mysql_query("SELECT DISTINCT name, spoofedrealm FROM gameplayers WHERE ip = '$ip'");
+		$result = mysql_query("SELECT DISTINCT name, spoofedrealm FROM gameplayers WHERE ip = '$ip'", $link);
 	}
 	
 	$array = array();

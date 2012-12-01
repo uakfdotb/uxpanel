@@ -435,7 +435,7 @@ function checkLock($action) {
 	$ip = escape($_SERVER['REMOTE_ADDR']);
 	$action = escape($action);
 	
-	$result = mysql_query("SELECT id,time,num FROM locks WHERE ip='" . $ip . "' AND action='" . $action . "'") or die(mysql_error());
+	$result = mysql_query("SELECT id,time,num FROM locks WHERE ip='" . $ip . "' AND action='" . $action . "'", $db) or die(mysql_error());
 	if($row = mysql_fetch_array($result)) {
 		$id = $row['id'];
 		$time = $row['time'];
@@ -473,7 +473,7 @@ function lockAction($action) {
 	$replace_id = -1;
 
 	//first find records with ip/action
-	$result = mysql_query("SELECT id,time,num FROM locks WHERE ip='" . $ip . "' AND action='" . $action . "'") or die(mysql_error());
+	$result = mysql_query("SELECT id,time,num FROM locks WHERE ip='" . $ip . "' AND action='" . $action . "'", $db) or die(mysql_error());
 	if($row = mysql_fetch_array($result)) {
 		$id = $row['id'];
 		$time = $row['time'];
@@ -489,10 +489,10 @@ function lockAction($action) {
 				//increase the count; maybe initiate an OVERLOAD
 				$count = $count + 1;
 				if($count >= $lock_count_overload[$action]) {
-					mysql_query("UPDATE locks SET num='-1', time='" . time() . "' WHERE ip='" . $ip . "'") or die(mysql_error());
+					mysql_query("UPDATE locks SET num='-1', time='" . time() . "' WHERE ip='" . $ip . "'", $db) or die(mysql_error());
 					return false;
 				} else {
-					mysql_query("UPDATE locks SET num='" . $count . "', time='" . time() . "' WHERE ip='" . $ip . "'") or die(mysql_error());
+					mysql_query("UPDATE locks SET num='" . $count . "', time='" . time() . "' WHERE ip='" . $ip . "'", $db) or die(mysql_error());
 				}
 			}
 		} else {
@@ -504,16 +504,16 @@ function lockAction($action) {
 			}
 		}
 	} else {
-		mysql_query("INSERT INTO locks (ip, time, action, num) VALUES ('" . $ip . "', '" . time() . "', '" . $action . "', '1')") or die(mysql_error());
+		mysql_query("INSERT INTO locks (ip, time, action, num) VALUES ('" . $ip . "', '" . time() . "', '" . $action . "', '1')", $db) or die(mysql_error());
 	}
 
 	if($replace_id != -1) {
-		mysql_query("UPDATE locks SET num='1', time='" . time() .  "' WHERE id='" . $replace_id . "'") or die(mysql_error());
+		mysql_query("UPDATE locks SET num='1', time='" . time() .  "' WHERE id='" . $replace_id . "'", $db) or die(mysql_error());
 	}
 
 	//some housekeeping
 	$delete_time = time() - $lock_time_max;
-	mysql_query("DELETE FROM locks WHERE time<='" . $delete_time . "'");
+	mysql_query("DELETE FROM locks WHERE time<='" . $delete_time . "'", $db);
 
 	return true;
 }

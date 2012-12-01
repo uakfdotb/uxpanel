@@ -117,15 +117,15 @@ function removeService($service_id) {
 	global $db;
 	
 	$service_id = escape($service_id);
-	mysql_query("DELETE FROM services WHERE id = '$service_id'");
-	mysql_query("DELETE FROM service_params WHERE service_id = '$service_id'");
+	mysql_query("DELETE FROM services WHERE id = '$service_id'", $db);
+	mysql_query("DELETE FROM service_params WHERE service_id = '$service_id'", $db);
 }
 
 //returns the account id associated with a service, or false on failure
 function getServiceOwner($service_id) {
 	global $db;
 	$service_id = escape($service_id);
-	$result = mysql_query("SELECT account_id FROM services WHERE id = '$service_id'");
+	$result = mysql_query("SELECT account_id FROM services WHERE id = '$service_id'", $db);
 	
 	if($row = mysql_fetch_array($result)) {
 		return $row[0];
