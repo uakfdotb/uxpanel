@@ -213,6 +213,7 @@ function ghostAddService($account_id, $service_name, $service_description, $iden
 	//copy files
 	copy($config['ghost_path'] . "language.cfg", $directory . "language.cfg");
 	copy($config['ghost_path'] . "ghost++", $directory . "ghost++");
+	chmod($directory . "chop++", 0700);
 	
 	//make the subdirectories
 	mkdir($directory . "replays");
