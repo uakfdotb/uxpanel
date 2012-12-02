@@ -421,7 +421,7 @@ substr(PHP_OS, 0, 3) !== 'WIN'))
 //returns boolean: true=proceed, false=lock up; the difference between this and lockAction is that this can be used for repeated tasks, like admin
 // then, only if action was unsuccessful would lockAction be called
 function checkLock($action) {
-	global $config;
+	global $config, $db;
 	$lock_time_initial = $config['lock_time_initial'];
 	$lock_time_overload = $config['lock_time_overload'];
 	$lock_count_overload = $config['lock_count_overload'];
@@ -457,7 +457,7 @@ function checkLock($action) {
 
 //returns boolean: true=proceed, false=lock up
 function lockAction($action) {
-	global $config;
+	global $config, $db;
 	$lock_time_initial = $config['lock_time_initial'];
 	$lock_time_overload = $config['lock_time_overload'];
 	$lock_count_overload = $config['lock_count_overload'];
