@@ -82,6 +82,16 @@ $config['db_username'] = "root";
 # password
 $config['db_password'] = "";
 
+### ** slave settings
+
+# whether this is a slave uxpanel instance
+# this allows remote logins
+$config['slave_enabled'] = false;
+
+# the master uxpanel base directory, with trailing slash
+# users will be redirected here when they view anything other than the service
+$config['slave_master'] = "http://uxpanel.example.com/";
+
 ### ** lock configuration
 
 # the time in seconds a user must wait before trying again; otherwise they get locked out (count not increased)

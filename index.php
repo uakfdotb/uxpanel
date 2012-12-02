@@ -21,6 +21,8 @@ if(isset($_SESSION['account_id'])) {
 	} else {
 		header("Location: index.php?message=" . urlencode("Unknown error occurred."));
 	}
+} else if($config['slave_enabled']) {
+	header("Location: " . $config['slave_master']);
 } else {
 	$message = "";
 	

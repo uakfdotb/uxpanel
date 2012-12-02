@@ -41,4 +41,12 @@ if(isset($_REQUEST['noredirect'])) {
 	}
 }
 
+//redirect slave if needed
+$script_name = basename($_SERVER["SCRIPT_FILENAME"]);
+$script_directory = basename(substr($_SERVER['SCRIPT_FILENAME'], 0, strrpos($_SERVER['SCRIPT_FILENAME'], '/')));
+
+if($config['slave_enabled'] && ($script_directory != "database" && $script_directory != "ghost" && $script_directory != "channel") && ($script_name != "remote_login.php" && $script_name != "service_redirect.php")) {
+	header("Location: " . $config['slave_master']);
+}
+
 ?>

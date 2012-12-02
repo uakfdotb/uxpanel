@@ -77,4 +77,54 @@ function authChangePassword($user_id, $old_password, $new_password) {
 	}
 }
 
+//going to go to remote
+//returns token
+function authRemoteRegister($user_id, $service_id, $ip) {
+	$user_id = escape($user_id);
+	$service_id = escape($service_id);
+	$ip = escape($ip);
+	$time = time();
+	
+	//generate token
+	$token = uid(128);
+	
+	//insert user
+	mysql_query("INSERT INTO remote_tokens (user_id, service_id, ip, token, time) VALUES ('$user_id', '$service_id', '$ip', '$token', '$time')");
+	
+	//housekeeping: delete entries older than two minutes
+	mysql_query("DELETE FROM remote_tokens WHERE time < '$time' - 120");
+	
+	return $token;
+}
+
+//authenticate as remote, returns true on success or false on failure
+function authRemote($user_id, $service_id, $ip, $token) {
+	$user_id = escape($user_id);
+	$service_id = escape($service_id);
+	$ip = escape($ip);
+	$token = escape($token);
+	
+	//housekeeping: delete entries older than two minutes
+	mysql_query("DELETE FROM remote_tokens WHERE time < '$time' - 120");
+	
+	//get user
+	$result = mysql_query("SELECT id FROM remote_tokens WHERE user_id = '$user_id' AND service_id = '$service_id' AND ip = '$ip' AND token = '$token'");
+	
+	if($row = mysql_fetch_row($result)) {
+		//delete the token
+		mysql_query("DELETE FROM remote_tokens WHERE id = '{$row[0]}'");
+		
+		//update session
+		$_SESSION['account_id'] = $user_id;
+		$_SESSION['account_email'] = 'unknown';
+		$_SESSION['account_name'] = 'unknown';
+		$_SESSION['slave'] = 1;
+		
+		//all good
+		return true;
+	} else {
+		return false;
+	}
+}
+
 ?>
