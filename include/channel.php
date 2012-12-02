@@ -17,7 +17,7 @@ $channelParameters = array(
 	'bot_banlistchannel' => array(2, 0, 0, 'Ban !banned users from the channel when they join'),
 	'op_antispam' => array(2, 0, 0, 'Enable core plugin: kick users who spam'),
 	'op_antiyell' => array(2, 0, 0, 'Enable core plugin: kick users who yell (all caps)'),
-	'bnet_tft' => array(3, 1, array(0 => 'RoC', 1 => 'TFT'), 'Whether to authenticate as RoC or TFT'),
+	'bnet_tft' => array(3, 0, array(0 => 'RoC', 1 => 'TFT'), 'Whether to authenticate as RoC or TFT'),
 	'bnet_cdkey_roc' => array(0, '', 0, 'The Reign of Chaos CD key'),
 	'bnet_cdkey_tft' => array(0, '', 0, 'The Frozen Throne CD key'),
 	'bnet_username' => array(0, '', 0, 'Realm username'),
