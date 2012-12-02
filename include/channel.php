@@ -554,7 +554,7 @@ function channelBotStop($service_id, $restart = false) {
 	//stop the bot
 	$jail = jailEnabled($service_id);
 	if($jail) {
-		jailExecute("kill -s INT $pid");
+		jailExecute($service_id, "kill -s INT $pid");
 	} else {
 		//make sure PID is still of pychop
 		$result = exec("cat /proc/$pid/cmdline");
