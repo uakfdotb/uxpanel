@@ -26,4 +26,23 @@ while($row = mysql_fetch_array($result)) {
 	executeCron($service_id, $link, $params);
 }
 
+if(function_exists('executeCronOther')) {
+	//also cron for the non-database services
+	$result = mysql_query("SELECT id, type FROM services WHERE type != 'database'", $db);
+
+	while($row = mysql_fetch_array($result)) {
+		$service_id = $row[0];
+		$service_type = $row[1];
+	
+		$params = array();
+		$result2 = mysql_query("SELECT k, v FROM service_params WHERE service_id = '$service_id'");
+	
+		while($row2 = mysql_fetch_array($result2)) {
+			$params[$row2[0]] = $row2[1];
+		}
+	
+		executeCronOther($service_id, $service_type, $params);
+	}
+}
+
 ?>
