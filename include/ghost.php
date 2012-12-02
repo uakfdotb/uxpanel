@@ -215,7 +215,7 @@ function ghostAddService($account_id, $service_name, $service_description, $iden
 	//copy files
 	copy($config['ghost_path'] . "language.cfg", $directory . "language.cfg");
 	copy($config['ghost_path'] . "ghost++", $directory . "ghost++");
-	chmod($directory . "chop++", 0700);
+	chmod($directory . "ghost++", 0700);
 	
 	//make the subdirectories
 	mkdir($directory . "replays", 0700);
@@ -900,7 +900,7 @@ function ghostMapList($service_id, $source = "maps") {
 	} else if($source == "mapcfgs") {
 		$jail = jailEnabled($service_id);
 		if($jail) {
-			return jailDirList($service_id, "mapcfgs");
+			return jailDirList($service_id, "mapcfgs", $extensions);
 		}
 		
 		$dir = new DirectoryIterator($config['ghost_path'] . $id . "/mapcfgs");
