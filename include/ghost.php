@@ -116,7 +116,7 @@ if(isset($config['bnetParameters'])) {
 	$bnetParameters = array_merge($bnetParameters, $config['bnetParameters']);
 }
 
-if(isset($config['ghostParameters'])) {
+if(isset($config['updatableFiles'])) {
 	$updatableFiles = array_merge($updatableFiles, $config['updatableFiles']);
 }
 
