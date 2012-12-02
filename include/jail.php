@@ -199,7 +199,6 @@ function jailExecute($service_id, $command, &$array = NULL, $shell = "sh") {
 	}
 	
 	$jail_user = getServiceParam($service_id, "jail_user");
-	file_put_contents("/ghost/last.log", "sudo -u " . escapeshellarg($jail_user) . " $shell -c " . escapeshellarg($command) . "\n",  FILE_APPEND);
 	return exec("sudo -u " . escapeshellarg($jail_user) . " $shell -c " . escapeshellarg($command), $array);
 }
 
