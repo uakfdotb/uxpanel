@@ -11,10 +11,11 @@
 // if 3, default extra is array of value => value description; otherwise 0
 $ghostParameters = array(
 	'bot_tft' => array(3, 1, array(0 => 'RoC', 1 => 'TFT'), 'Whether to authenticate as RoC or TFT'),
-	'bot_reconnect' => array(2, 0, 0, 'Whether to enable GProxy++ reconnects'),
+	'bot_reconnect' => array(2, 0, 0, 'Enable GProxy++ reconnects'),
 	'bot_reconnectwaittime' => array(1, 3, 0, 'The number of minutes allowable to wait for GProxy++ reconnect.'),
 	'bot_maxgames' => array(1, 40, 0, 'Maximum number of games bot should host.'),
 	'bot_commandtrigger' => array(0, '!', 0, "The in-game command trigger."),
+	'bot_savereplays' => array(2, 0, 0, "Save replays"),
 	'bot_virtualhostname' => array(0, '|cFF4080C0GHost', 0, "The virtual host name in lobby"),
 	'bot_checkmultipleipusage' => array(2, 1, 0, 'Whether to report multiple IP usage in lobby'),
 	'bot_spoofchecks' => array(3, 1, array(0 => 'Disable automatic spoofchecking', 1 => 'Enable auto-spoofcheck on all players', 2 => 'Enable auto-spoofcheck on admins only'), 'Spoofchecking method'),
