@@ -592,7 +592,7 @@ function channelSetDatabase($service_id, $db_settings) {
 	}
 	
 	//reconfigure
-	channelReconfigure($service_id, array('db_server' => $db_settings['server'], 'db_database' => $db_settings['name'], 'db_user' => $db_settings['username'], 'db_password' => $db_settings['password']));
+	channelReconfigure($service_id, array('db_server' => $db_settings['server'], 'db_database' => $db_settings['name'], 'db_user' => $db_settings['username'], 'db_password' => $db_settings['password']), true);
 }
 
 //STYLE FUNCTIONS
