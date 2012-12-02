@@ -171,7 +171,7 @@ function ghostAddService($account_id, $service_name, $service_description, $iden
 	//create parameters needed later
 	$id3 = $id3 . "";
 	while(strlen($id3) < 3) {
-		$id3 .= "0";
+		$id3 = "0" . $id3;
 	}
 	
 	setServiceParam($service_id, 'id3', $id3);
