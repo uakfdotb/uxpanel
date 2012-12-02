@@ -22,7 +22,7 @@ $ghostParameters = array(
 	'bot_reserveadmins' => array(2, 1, 0, 'Whether to reserve admins (reserved players can alwyas join full games)'),
 	'bot_autolock' => array(2, 0, 0, 'Whether to lock the game when the owner joins'),
 	'bot_allowdownloads' => array(3, 1, array(0 => 'Disable map downloads', 1 => 'Enable map downloads', 2 => 'Conditional map downloads'), 'Whether to allow map downloads'),
-	'bot_autokickping' => array(1, 1, 0, 'Maximum ping before a player will be kicked'),
+	'bot_autokickping' => array(1, 400, 0, 'Maximum ping before a player will be kicked'),
 	'bot_lobbytimelimit' => array(1, 10, 0, 'Minutes to allow a game to stay in lobby without an owner'),
 	'bot_latency' => array(1, 100, 0, 'Latency to use in-game'),
 	'bot_synclimit' => array(1, 50, 0, 'Maximum packets behind before lag screen comes up'),
