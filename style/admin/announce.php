@@ -1,6 +1,7 @@
 <h1>Announcements</h1>
 
-<form method="post" action="announce.php?action=add">
+<form method="post" action="announce.php">
+<input type="hidden" name="action" value="add" />
 Title: <input type="text" name="title" />
 <br />Body:<br /><textarea rows="6" name="body" class="field span12"></textarea>
 <br /><input type="submit" value="Create new announcement" />
