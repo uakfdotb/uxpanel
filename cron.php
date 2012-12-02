@@ -16,7 +16,7 @@ while($row = mysql_fetch_array($result)) {
 	$service_id = $row[0];
 	
 	$params = array();
-	$result2 = mysql_query("SELECT k, v FROM service_params WHERE service_id = '$service_id'");
+	$result2 = mysql_query("SELECT k, v FROM service_params WHERE service_id = '$service_id'", $db);
 	
 	while($row2 = mysql_fetch_array($result2)) {
 		$params[$row2[0]] = $row2[1];
@@ -35,7 +35,7 @@ if(function_exists('executeCronOther')) {
 		$service_type = $row[1];
 	
 		$params = array();
-		$result2 = mysql_query("SELECT k, v FROM service_params WHERE service_id = '$service_id'");
+		$result2 = mysql_query("SELECT k, v FROM service_params WHERE service_id = '$service_id'", $db);
 	
 		while($row2 = mysql_fetch_array($result2)) {
 			$params[$row2[0]] = $row2[1];
