@@ -254,6 +254,16 @@ function channelGetConfiguration($service_id, $skip = true) {
 		return false;
 	}
 	
+	//we ignore some settings to allow panel administrator to restrict configurations
+	// on a per-user basis; this is a space-separated list of configuration keys
+	$ignoreKeys = getServiceParam($service_id, "ignorekeys");
+	
+	if($ignoreKeys === false) {
+		$ignoreKeys = array();
+	} else {
+		$ignoreKeys = explode(" ", $ignoreKeys);
+	}
+	
 	$jail = jailEnabled($service_id);
 	if($jail) {
 		jailFileOpen($service_id, "channel", "chop.cfg");
@@ -277,7 +287,7 @@ function channelGetConfiguration($service_id, $skip = true) {
 					$val = trim(substr($buffer, $index + 3));
 				}
 				
-				if(!$skip || isset($channelParameters[$key])) {
+				if(!$skip || (isset($channelParameters[$key]) && !in_array($key, $ignoreKeys))) {
 					$array[$key] = $val;
 				}
 			}
