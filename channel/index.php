@@ -38,6 +38,10 @@ if(isset($_SESSION['account_id']) && isset($_REQUEST['id']) && is_numeric($_REQU
 				$message = $result;
 			}
 		}
+		
+		if(!isset($_SESSION['noredirect'])) {
+			header("Location: index.php?id=" . $service_id . "&message=" . urlencode($message));
+		}
 	}
 	
 	$status = channelGetStatus($service_id);
