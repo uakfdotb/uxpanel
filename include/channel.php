@@ -52,7 +52,7 @@ $defaultChannelParameters = array(
 
 $channelPlugins = array('accesskick', 'afk', 'alarm', 'announce', 'calc', 'chanstats', 'clanactivity', 'clanmembers', 'copycat', 'dbstats', 'gamequeue', 'getgames', 'getgames-whois', 'gettime', 'greet', 'inactive', 'inviteme', 'lottery', 'matchmake', 'plugindb', 'pluginman', 'pounce', 'rand', 'randkick', 'randspeed', 'rroulette', 'security', 'snipe', 'trivia', 'votekick', '__init__');
 
-$channelUpdatableFiles = array("language.cfg", "cfg/ask8ball.txt", "cfg/command.txt", "cfg/quote.txt", "cfg/slap_neg.txt", "cfg/slap_pos.txt");
+$channelUpdatableFiles = array("language.cfg", "cfg/ask8ball.txt", "cfg/command.txt", "cfg/quote.txt", "cfg/slap_neg.txt", "cfg/slap_pos.txt", "cfg/phrase.txt");
 
 //get additional parameters from configuration
 
@@ -144,6 +144,7 @@ function channelAddService($account_id, $service_name, $service_description, $id
 	copy($config['channel_path'] . "cfg/quote.txt", $directory . "cfg/quote.txt");
 	copy($config['channel_path'] . "cfg/slap_neg.txt", $directory . "cfg/slap_neg.txt");
 	copy($config['channel_path'] . "cfg/slap_pos.txt", $directory . "cfg/slap_pos.txt");
+	copy($config['channel_path'] . "cfg/phrase.txt", $directory . "cfg/phrase.txt");
 	copy($config['channel_path'] . "plugins/__init__.py", $directory . "plugins/__init__.py");
 	
 	foreach($GLOBALS['channelPlugins'] as $plugin) {
