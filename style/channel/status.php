@@ -4,7 +4,8 @@
 <p><b><i><?= htmlspecialchars($message) ?></i></b></p>
 <? } ?>
 
-<p><b>Bot status: <font color="<?= $status['color'] ?>"><?= $status['status'] ?></font></b></p>
+<p><b>Bot status: </b> <?= $botStatus ?>
+<br /><b>Realm connection status: <font color="<?= $status['color'] ?>"><?= $status['status'] ?></font></b></p>
 
 <? if(count($status['err']) > 0) { ?>
 	<p>Errors:</p>

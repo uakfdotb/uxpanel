@@ -12,6 +12,10 @@ if(isset($_SESSION['account_id']) && isset($_REQUEST['id']) && is_numeric($_REQU
 	$service_id = $_REQUEST['id'];
 	$message = "";
 	
+	if(isset($_REQUEST['message'])) {
+		$message = $_REQUEST['message'];
+	}
+	
 	if(isset($_POST['action'])) {
 		if($_POST['action'] == "start") {
 			$result = channelBotStart($service_id);
@@ -45,7 +49,8 @@ if(isset($_SESSION['account_id']) && isset($_REQUEST['id']) && is_numeric($_REQU
 	}
 	
 	$status = channelGetStatus($service_id);
-	get_page("status", "channel", array('service_id' => $service_id, 'status' => $status, 'message' => $message));
+	$botStatus = getServiceParam($service_id, "pid") != 0 ? "Online" : "Offline";
+	get_page("status", "channel", array('service_id' => $service_id, 'status' => $status, 'message' => $message, 'botStatus' => $botStatus));
 } else {
 	header("Location: ../panel/");
 }
