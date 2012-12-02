@@ -44,6 +44,14 @@ $config['channel_path'] = "/channel/";
 # additional pychop editable files
 #$config['channelUpdatableFiles'] = array();
 
+### ** database settings
+
+# path to the cron file, if it is being used
+$config['cron_path'] = "/cron.php";
+
+#additional cron parameters
+#$config['cronParameters'] = array();
+
 ### ** email information
 
 # email address to send mail from

@@ -275,7 +275,7 @@ function get_page($page, $context, $args = array()) {
 	} else if($context == "panel") {
 		$navbar = array('./' => "Home", 'account.php' => "Account", 'services.php' => "Services", 'announce.php' => "Announcements", 'index.php?action=logout' => "Logout");
 	} else if($context == "database") {
-		$navbar = array("./?id=$service_id" => "Home", "current.php?id=$service_id" => 'Running games', "games.php?id=$service_id" => 'Game log', "bans.php?id=$service_id" => 'Bans', "admins.php?id=$service_id" => 'Admins', "execute.php?id=$service_id" => "Execute command", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
+		$navbar = array("./?id=$service_id" => "Home", "current.php?id=$service_id" => 'Running games', "games.php?id=$service_id" => 'Game log', "bans.php?id=$service_id" => 'Bans', "admins.php?id=$service_id" => 'Admins', "execute.php?id=$service_id" => "Execute command", "cron.php?id=$service_id" => "Cron", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
 	} else if($context == "admin") {
 		$navbar = array('./' => "Home", 'accounts.php' => "Accounts", 'status.php' => "Status", 'announce.php' => "Announcements", 'index.php?action=logout' => "Logout");
 	} else {

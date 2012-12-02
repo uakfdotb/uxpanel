@@ -3,6 +3,20 @@
 ### this file contains functions for the database service
 ### it is not for uxpanel database utility functions
 
+// array of cron parameters and their type
+// key => (type, default, default extra, description)
+// types:
+//  0: string
+//  1: integer
+//  2: boolean
+//  3: select from choices
+// if 3, default extra is array of value => value description; otherwise 0
+$cronParameters = array();
+
+if(isset($config['cronParameters'])) {
+	$cronParameters = $config['cronParameters'];
+}
+
 //identifier will be used as the database name
 function databaseAddService($account_id, $service_name, $service_description, $identifier) {
 	$identifier = stripAlphaNumeric($identifier);
@@ -572,6 +586,107 @@ function databaseExecuteCommand($service_id, $botid, $command) {
 	$botid = escape($botid);
 	$command = escape($command);
 	mysql_query("INSERT INTO commands (botid, command) VALUES ('$botid', '$command')", $link);
+}
+
+//returns array of key => value
+function databaseGetConfigFromRequest(&$parameters, &$request) {
+	$array = array();
+	
+	foreach($parameters as $k => $param) { //param is array(type, default, default extra, description)
+		$form_k = "gcform_$k";
+		
+		//strings, integers, and select: add if it's set
+		if(($param[0] == 0 || $param[0] == 1 || $param[0] == 3) && isset($request[$form_k])) {
+			$array[$k] = $request[$form_k];
+		}
+		
+		//boolean variables: always set, and base on checkbox
+		else if($param[0] == 2) {
+			$array[$k] = isset($request[$form_k]) ? 1 : 0;
+		}
+	}
+	
+	return $array;
+}
+
+//escapes function in configuration file
+function databaseConfEscape($type, $default, $type_extra, $value) {
+	if($type == 0) {
+		//string, just strip newlines
+		return str_replace(array("\n", "\r"), array("", ""), $value);
+	} else if($type == 1) {
+		//integer, convert
+		return intval($value);
+	} else if($type == 2) {
+		if($value == 1 || $value === "true") {
+			return 1;
+		} else {
+			return 0;
+		}
+	} else if($type == 3) {
+		if(isset($type_extra[$value])) {
+			return $value;
+		} else {
+			return $default;
+		}
+	}
+}
+
+//returns an array of k => v
+function databaseGetCronConfig($service_id) {
+	$array = array();
+	
+	foreach($GLOBALS['cronParameters'] as $k => $v) {
+		$setting = getServiceParam($service_id, "cron_" . $k);
+		
+		if($setting === false) {
+			$setting = $v[1];
+		}
+		
+		$array[$k] = $setting;
+	}
+	
+	return $array;
+}
+
+function databaseSetCronConfig($service_id, $array) {
+	foreach($array as $k => $v) {
+		if(isset($GLOBALS['cronParameters'][$k])) {
+			$v = databaseConfEscape($GLOBALS['cronParameters'][$k][0], $GLOBALS['cronParameters'][$k][1], $GLOBALS['cronParameters'][$k][2], $v);
+			setServiceParam($service_id, "cron_" . $k, $v);
+		}
+	}
+}
+
+//STYLE FUNCTIONS
+function databaseDisplayConfiguration($k, $v, $parameters) {
+	$form_k = htmlspecialchars("gcform_$k");
+	$type = $parameters[$k][0];
+	$options = $parameters[$k][2];
+	$description = $parameters[$k][3];
+	?>
+	<tr>
+		<td><?= htmlspecialchars($k) ?></td>
+		<td>
+		<? if($type == 0 || $type == 1) { ?>
+			<input type="text" name="<?= $form_k ?>" value="<?= htmlspecialchars($v) ?>" style="align:left;" />
+		<? } else if($type == 2) {
+			$checked = $v == 1 ? " checked" : ""; ?>
+			<input type="checkbox" name="<?= $form_k ?>" value="<?= 1 ?>"<?= $checked ?> />
+		<? } else if($type == 3) { ?>
+			<select name="<?= $form_k ?>">
+			<?
+			foreach($options as $option => $option_desc) {
+				$selected = $v == $option ? " selected" : ""; //determine if this option is selected
+				?>
+				<option value="<?= htmlspecialchars($option) ?>"<?= $selected ?>><?= htmlspecialchars($option_desc) ?></option>
+			<? } ?>
+			</select>
+		<? } ?>
+		</td>
+		<td><?= htmlspecialchars($description) ?></td>
+	</tr>
+	<?
 }
 
 ?>
