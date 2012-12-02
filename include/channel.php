@@ -57,7 +57,7 @@ $channelUpdatableFiles = array("language.cfg", "cfg/ask8ball.txt", "cfg/command.
 //get additional parameters from configuration
 
 if(isset($config['channelParameters'])) {
-	$channelParamaters = array_merge($channelParameters, $config['channelParameters']);
+	$channelParameters = array_merge($channelParameters, $config['channelParameters']);
 }
 
 if(isset($config['defaultChannelParameters'])) {
