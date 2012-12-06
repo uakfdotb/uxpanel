@@ -137,7 +137,7 @@ function databaseGetRunning($service_id) {
 	$link = databaseConnect($service_id);
 	
 	if($link) {
-		$result = mysql_query("SELECT botid, gamename, ownername, creatorname, map, slotstaken, slotstotal, usernames, totalgames, totalplayers, id FROM gamelist WHERE gamename != '' ORDER BY botid, id", $link);
+		$result = mysql_query("SELECT botid, gamename, ownername, creatorname, map, slotstaken, slotstotal, usernames, totalgames, totalplayers, id FROM gamelist WHERE gamename != '' ORDER BY botid, id DESC", $link);
 		$array = array();
 		
 		while($row = mysql_fetch_row($result)) {
