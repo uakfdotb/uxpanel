@@ -105,7 +105,7 @@ function jailFileExists($service_id, $filename) {
 	return jailExecute($service_id, "[ -f " . escapeshellarg($jail_file) . " ] && echo \"1\" || echo \"0\"", $array, "bash") == "1";
 }
 
-function jailFileDelete($service_id, $context, $filename) {
+function jailFileDelete($service_id, $filename) {
 	global $config;
 	
 	//get the identifier

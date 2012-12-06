@@ -865,7 +865,7 @@ function ghostMapDelete($service_id, $filename, $mapcfg = false) {
 	
 	$jail = jailEnabled($service_id);
 	//unlink if this is a map, or if we're not jailed (maps are not jailed)
-	if($jail || !$mapcfg) {
+	if(!$jail || !$mapcfg) {
 		if(file_exists($target)) {
 			unlink($target);
 		}
