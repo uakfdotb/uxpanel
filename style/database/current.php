@@ -27,7 +27,7 @@ function showDetails(usernames) {
 <div id="details">
 </div>
 
-<table>
+<table cellpadding="4">
 <tr>
 	<th>Bot ID</th>
 	<th>Gamename</th>
