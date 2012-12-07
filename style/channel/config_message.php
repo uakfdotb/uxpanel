@@ -4,7 +4,7 @@
 <p><b><i><?= htmlspecialchars($message) ?></i></b></p>
 <? } ?>
 
-<p>You can miscellaneous files using this configuration tool.</p>
+<p>You can edit miscellaneous files using this configuration tool.</p>
 
 <form method="get" action="config_message.php">
 <input type="hidden" name="id" value="<?= $service_id ?>" />
