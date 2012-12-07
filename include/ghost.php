@@ -586,6 +586,9 @@ function ghostReconfigure($service_id, $array, $remove = false) {
 		}
 	}
 	
+	//sort the configuration intelligently
+	uksort($ghostConfiguration, 'ghostConfigurationComparator');
+	
 	//re-order the configuration so that the bnet id's start from 1 and go up incrementally
 	$curr_bnet_id = 0; //the bnet id counter
 	$seen_bnet_id = -1; //the last seen bnet id from the input
@@ -613,7 +616,7 @@ function ghostReconfigure($service_id, $array, $remove = false) {
 		$reorderedConfiguration[$k] = $v;
 	}
 	
-	//sort the configuration intelligently
+	//sort the configuration intelligently again, just in case?
 	uksort($reorderedConfiguration, 'ghostConfigurationComparator');
 	
 	//write the configuration out
