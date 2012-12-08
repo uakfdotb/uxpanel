@@ -6,6 +6,7 @@ include("../include/session.php");
 include("../include/dbconnect.php");
 
 include("../include/account.php");
+include("../include/auth.php");
 
 if(isset($_SESSION['account_id']) && isset($_REQUEST['id'])) {
 	$service_id = $_REQUEST['id'];
