@@ -92,6 +92,10 @@ $config['slave_enabled'] = false;
 # users will be redirected here when they view anything other than the service
 $config['slave_master'] = "http://uxpanel.example.com/";
 
+# an id string or number for this slave instance
+# this is only used if slave_enabled = true
+$config['slave_id'] = 0;
+
 ### ** lock configuration
 
 # the time in seconds a user must wait before trying again; otherwise they get locked out (count not increased)
