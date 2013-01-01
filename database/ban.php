@@ -26,6 +26,12 @@ if(isset($_SESSION['account_id']) && isset($_REQUEST['id']) && is_numeric($_REQU
 			$messageEscape = urlencode(str_replace(array("<br>", "<br/>", "<br />"), array("[br]", "[br]", "[br]"), $message));
 			header("Location: ban.php?id=" . $_REQUEST['id'] . "&message=" . $messageEscape);
 		}
+	} else if(isset($_POST['clearbans']) && $_POST['doclearbans'] = 'do') {
+		databaseClearBans($_REQUEST['id']);
+		
+		if(!isset($_SESSION['noredirect'])) {
+			header("Location: ban.php?id=" . $_REQUEST['id'] . "&message=" . urlencode("Cleared all bans successfully."));
+		}
 	}
 
 	$realms = databaseGetRealms($_REQUEST['id']);

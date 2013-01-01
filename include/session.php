@@ -1,7 +1,7 @@
 <?php
 session_start();
 
-if (!isset($_SESSION['initiated']) || !isset($_SESSION['active']) || time() - $_SESSION['active'] > 1200) {
+if (!isset($_SESSION['initiated']) || !isset($_SESSION['active']) || time() - $_SESSION['active'] > 10800) {
 	session_unset();
 	session_regenerate_id();
 	$_SESSION['initiated'] = true;

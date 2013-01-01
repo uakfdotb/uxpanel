@@ -588,6 +588,16 @@ function databaseExecuteCommand($service_id, $botid, $command) {
 	mysql_query("INSERT INTO commands (botid, command) VALUES ('$botid', '$command')", $link);
 }
 
+function databaseClearBans($service_id) {
+	$link = databaseConnect($service_id);
+	
+	if(!$link) {
+		return array();
+	}
+	
+	mysql_query("DELETE FROM bans", $link);
+}
+
 //returns array of key => value
 function databaseGetConfigFromRequest(&$parameters, &$request) {
 	$array = array();

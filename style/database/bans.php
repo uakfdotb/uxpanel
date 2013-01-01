@@ -10,3 +10,8 @@
 <li><a href="namelookup.php?id=<?= $service_id ?>">Find players who have used a given IP address</a></li>
 <li><a href="iplookup.php?id=<?= $service_id ?>">Find IP addresses that a given player has used</a></li>
 </ul>
+
+<form method="post" action="ban.php">
+<input type="hidden" name="doclearbans" value="do" />
+<input type="submit" name="clearbans" value="Clear all bans" />
+</form>
