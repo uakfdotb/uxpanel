@@ -12,7 +12,7 @@
 </ul>
 
 <form method="post" action="ban.php">
-<input type="hidden" name="id" value="{SERVICE_ID}" />
+<input type="hidden" name="id" value="<?= $service_id ?>" />
 <input type="hidden" name="doclearbans" value="do" />
 <input type="submit" name="clearbans" value="Clear all bans" />
 </form>
