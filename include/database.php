@@ -215,6 +215,7 @@ function databaseGetGame($service_id, $game_id, $fast = false) {
 //$ban_aliases: if true it will also ban aliases
 //false on failure, or string success message on success
 function databaseBanUser($service_id, $username, $realm, $duration, $reason, $unban = false, $name_only = false, $ban_aliases = false) {
+	global $config;
 	$link = databaseConnect($service_id);
 	
 	if(!$link) {
@@ -252,7 +253,7 @@ function databaseBanUser($service_id, $username, $realm, $duration, $reason, $un
 		}
 		
 		//make sure user isn't already banned
-		$result = mysql_query("SELECT COUNT(*) FROM bans WHERE name = '$username' AND server = '$realm_it' AND context = 'ttr.cloud'", $link);
+		$result = mysql_query("SELECT COUNT(*) FROM bans WHERE name = '$username' AND server = '$realm_it'", $link);
 		$row = mysql_fetch_row($result);
 		if($row[0] > 0) {
 			$message .= "Skipping $realm_it: already banned!<br />";
@@ -271,13 +272,23 @@ function databaseBanUser($service_id, $username, $realm, $duration, $reason, $un
 				$ban_realm = $realm_it;
 				if($ban_realm == "") $ban_realm = $default_realm;
 				
-				mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, expiredate, context) VALUES ('0', '$ban_realm', '$username', '$ip', CURDATE(), '', 'uxpanel', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ), 'ttr.cloud')", $link);
+				if($config['db_expiredate'] === false) {
+					mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason) VALUES ('0', '$ban_realm', '$username', '$ip', CURDATE(), '', 'uxpanel', '$reason'", $link);
+				} else {
+					mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, {$config['db_expiredate']}) VALUES ('0', '$ban_realm', '$username', '$ip', CURDATE(), '', 'uxpanel', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ))", $link);
+				}
+				
 				$message .= "Banned used IP address [$ip] on $realm_it<br />";
 			}
 		} else {
 			//no previous games found; ban by username only if this is an actual realm
 			if($realm_it != "") {
-				mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, expiredate, context) VALUES ('0', '$realm_it', '$username', '', CURDATE(), '', 'uxpanel', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ), 'ttr.cloud')", $link);
+				if($config['db_expiredate'] === false) {
+					mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason VALUES ('0', '$realm_it', '$username', '', CURDATE(), '', 'uxpanel', '$reason')", $link);
+				} else {
+					mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, {$config['db_expiredate']}) VALUES ('0', '$realm_it', '$username', '', CURDATE(), '', 'uxpanel', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ))", $link);
+				}
+				
 				$message .= "Banned by name on $realm_it<br />";
 			}
 		}
@@ -329,13 +340,19 @@ function databaseDeleteBan($service_id, $ban_id) {
 
 //returns array of id => (name, server, ip, admin, gamename, reason, date, expiredate)
 function databaseGetBans($service_id) {
+	global $config;
 	$link = databaseConnect($service_id);
 	
 	if(!$link) {
 		return array();
 	}
 	
-	$result = mysql_query("SELECT id, name, server, ip, admin, gamename, reason, date, expiredate FROM bans ORDER BY id", $link);
+	if($config['db_expiredate'] === false) {
+		$result = mysql_query("SELECT id, name, server, ip, admin, gamename, reason, date, 0 FROM bans ORDER BY id", $link);
+	} else {
+		$result = mysql_query("SELECT id, name, server, ip, admin, gamename, reason, date, {$config['db_expiredate']} FROM bans ORDER BY id", $link);
+	}
+	
 	$array = array();
 	
 	while($row = mysql_fetch_array($result)) {
@@ -349,6 +366,7 @@ function databaseGetBans($service_id) {
 //last few games is array of game id => gamename
 //ban history is array of id => ('admin' => admin, 'reason' => reason, 'gamename' => gamename, 'date' => date, 'expiredate' => expiredate)
 function databaseSearchUser($service_id, $username, $realm) {
+	global $config;
 	$link = databaseConnect($service_id);
 	
 	if(!$link) {
@@ -387,7 +405,11 @@ function databaseSearchUser($service_id, $username, $realm) {
 		
 		if($totalgames != 0) {
 			//ban history
-			$result = mysql_query("SELECT admin, reason, gamename, date, expiredate FROM ban_history WHERE name = '$username' AND server = '$realm_it' ORDER BY id DESC LIMIT 6", $link);
+			if($config['db_expiredate'] === false) {
+				$result = mysql_query("SELECT admin, reason, gamename, date, NOW( ) FROM ban_history WHERE name = '$username' AND server = '$realm_it' ORDER BY id DESC LIMIT 6", $link);
+			} else {
+				$result = mysql_query("SELECT admin, reason, gamename, date, {$config['db_expiredate']} FROM ban_history WHERE name = '$username' AND server = '$realm_it' ORDER BY id DESC LIMIT 6", $link);
+			}
 			
 			while($row = mysql_fetch_row($result)) {
 				$array[$realm_it]['bans'][] = array('admin' => $row[0], 'reason' => $row[1], 'gamename' => $row[2], 'date' => $row[3], 'expiredate' => $row[4]);

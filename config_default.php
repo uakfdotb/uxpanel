@@ -82,6 +82,9 @@ $config['db_username'] = "root";
 # password
 $config['db_password'] = "";
 
+# false if ban expiration disabled, or the column name otherwise
+$config['db_expiredate'] = 'expiredate';
+
 ### ** slave settings
 
 # whether this is a slave uxpanel instance
