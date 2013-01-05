@@ -11,6 +11,9 @@ $config['format_time'] = "j M Y H:i:s T";
 # format to use for displaying dates
 $config['format_date'] = "j M Y";
 
+# duration to maintain a session with a user
+$config['session_duration'] = 1800;
+
 ### ** GHost settings
 
 # path to GHost on server, with trailing slash
