@@ -1,0 +1,83 @@
+*** Logging in ***
+
+After setting up, you'll want to login with your administrator account. To do this, go to
+	http://example.com/uxpanel/admin/
+
+Then, enter your username and password (specified in config_local.php), and login.
+
+If you are logging in as a normal user, use this link instead:
+	http://example.com/uxpanel/
+
+uxpanel will restrict your access if you fail to login too many times. In that case, just wait until you can login again. Alternatively, clear the uxpanel locks table:
+	DELETE FROM locks;
+
+*** Creating a client account ***
+
+The administrator account does not have services. To have services, you need to create a client account. To do this, select Accounts from the admin panel, enter an email address, password, and name, and then create the account.
+
+There are two ways to access the account. You can either morph into the new account through the admin Accounts tab, or login to the account through the normal user login page.
+
+*** Creating a database service ***
+
+This section covers how to create a database service. This applies to both existing and new services.
+
+First, go to the Accounts tab and select the account that you wish to add the database service to. You should see an Add Service form. Enter the following:
+	Name: a name for the database service
+	Description: a description for the database service
+	Type: "database" (without the quotes, must be lowercase)
+	Identifier: the database name
+
+Hit Add service. You should see a new service show up in the services list for the account.
+
+Select the new service; this should take you to the Service Manager page for the database service you just created. On this page, set db_name, db_host, db_username, and db_password if these are not already correct; to do this, enter the key and a value for the key, and select Set Parameter.
+
+For example, to set the database password to "blah", you would enter "db_password" under Key, "blah" under Value, and then select Set Parameter.
+
+If the database doesn't exist yet, click on the "click here to do so" link that will set up the database. This will execute the install.sql file in your ghost_path directory (ghost_path is a configuration value, in config_local.php); if this file doesn't exist, uxpanel cannot set up the database automatically. Also note that the database account (db_username and db_password) must have access to create the tables in the database; additionally, the database being used must already be created:
+	CREATE DATABASE database_name;
+	GRANT ALL ON database_name TO 'user'@'localhost' IDENTIFIED BY 'blah';
+
+*** Creating a GHost service ***
+
+** New service **
+
+If your ghost_path directory is set up correctly, all you need to do is to use the Add Service form on the Account Services page.
+	Name: a name for the GHost service
+	Description: a description for the database service
+	Type: "ghost" (without the quotes, must be lowercase)
+	Identifier: the directory to create inside ghost_path that will store tho service files
+
+This will create the GHost service.
+
+** Existing service **
+
+For existing services, the process is more complicated. First, the service must be moved so that it is a subdirectory under the ghost_path directory.
+
+Now, manually add the service to the database:
+	INSERT INTO services (account_id, name, description, type) VALUES ('1', 'My Bot', 'My Bot Description', 'ghost');
+
+Here, 1 is the account ID. This can be found from the URL on the Account Services page for the target account.
+
+Now, go to the Account Services page and select the new service. You must fill out the following service parameters using the Key/Value/submit form (may be case sensitive depending on your database):
+	id: the subdirectory name in ghost_path
+		for example, if your bot is located in /ghost/bot/ and ghost_path = /ghost/, then this is "bot"
+	id3: a three digit number, preferable the service ID left-padded with zeroes
+		for example, if your service ID (services.id in database, or get from Service Manager URL) is 14, we recommend 014 for the id3
+
+** Finish up the GHost service **
+
+If you have set up a database service, you can automatically configure the GHost service to use the database. To do this, select the GHost service and enter the Service Manager. Then, under "Set database settings", enter the ID number of the database service (this can be found in the URL for the database service Service Manager page) and hit the button.
+
+*** Creating a pychop service ***
+
+This is similar to creating a GHost service.
+
+*** Setting up jail ***
+
+The uxpanel jail system enhances security by running host bots as a separate user. It is highly recommended that you use this system.
+
+For information on how to set it up, see uxpanel/include/jail.php.
+
+*** Setting up slave ***
+
+The uxpanel slave system allows you to run uxpanel across multiple servers. Information is not currently available.

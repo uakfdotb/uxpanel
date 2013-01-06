@@ -23,6 +23,10 @@ First, create the database. The database name is the db_name configuration optio
 
 This will create all the needed tables and such.
 
+*** Directory configuration ***
+
+Now, we will set up some directories. These directories will hold the files that will be shared across all services. When (/if) you create a new service through uxpanel, it will base the new service on the files in these directories. This applies to all three types of services (GHost, pychop, database).
+
 *** Ghost directory configuration ***
 
 Create the ghost_path that you set earlier in configuration. We will use /home/uxpanel/ghost/:
@@ -37,7 +41,7 @@ Several files are required by uxpanel that must be created manually depending on
 In addition, a maps/ directory should exist (/home/uxpanel/ghost/maps/). This will be used for the public map repository feature of uxpanel. This directory can be empty.
 
 The web user will need access to the ghost directory:
-	chown -R www-data www-data /home/uxpanel/ghost/
+	chown -R www-data:www-data /home/uxpanel/ghost/
 
 *** Channel directory configuration ***
 
