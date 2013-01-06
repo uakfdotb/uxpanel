@@ -265,6 +265,15 @@ function channelGetConfiguration($service_id, $skip = true) {
 		$ignoreKeys = explode(" ", $ignoreKeys);
 	}
 	
+	//similarly, we add some extra keys
+	$extraKeys = getServiceParam($service_id, "extrakeys");
+	
+	if($extraKeys === false) {
+		$extraKeys = array();
+	} else {
+		$extraKeys = explode(" ", $extraKeys);
+	}
+	
 	$jail = jailEnabled($service_id);
 	if($jail) {
 		jailFileOpen($service_id, "channel", "chop.cfg");
@@ -288,7 +297,7 @@ function channelGetConfiguration($service_id, $skip = true) {
 					$val = trim(substr($buffer, $index + 3));
 				}
 				
-				if(!$skip || (isset($channelParameters[$key]) && !in_array($key, $ignoreKeys))) {
+				if(!$skip || ((isset($channelParameters[$key]) || in_array($key, $extraKeys)) && !in_array($key, $ignoreKeys))) {
 					$array[$key] = $val;
 				}
 			}
@@ -332,6 +341,15 @@ function channelReconfigure($service_id, $array, $force = false) {
 		return false;
 	}
 	
+	//we allow admin to add some extra keys for this instance in configuration
+	$extraKeys = getServiceParam($service_id, "extrakeys");
+	
+	if($extraKeys === false) {
+		$extraKeys = array();
+	} else {
+		$extraKeys = explode(" ", $extraKeys);
+	}
+	
 	//get the existing configuration
 	$channelConfiguration = channelGetConfiguration($service_id, false);
 	
@@ -339,7 +357,7 @@ function channelReconfigure($service_id, $array, $force = false) {
 	foreach($array as $k => $v) {
 		if(isset($channelParameters[$k])) {
 			$channelConfiguration[$k] = channelEscape($channelParameters[$k][0], $channelParameters[$k][1], $channelParameters[$k][2], $v);
-		} else if($force) {
+		} else if(in_array($k, $extraKeys) || $force) {
 			$channelConfiguration[$k] = channelEscape(0, 0, 0, $v);
 		}
 	}
@@ -362,6 +380,44 @@ function channelReconfigure($service_id, $array, $force = false) {
 	}
 	
 	return true;
+}
+
+function channelGetParameters($service_id) {
+	global $channelParameters;
+	$parameters = $channelParameters;
+	
+	//we ignore some settings to allow panel administrator to restrict configurations
+	// on a per-user basis; this is a space-separated list of configuration keys
+	$ignoreKeys = getServiceParam($service_id, "ignorekeys");
+	
+	if($ignoreKeys === false) {
+		$ignoreKeys = array();
+	} else {
+		$ignoreKeys = explode(" ", $ignoreKeys);
+		
+		foreach($ignoreKeys as $key) {
+			if(isset($parameters[$key])) {
+				unset($parameters[$key]);
+			}
+		}
+	}
+	
+	//similarly, we add some extra keys
+	$extraKeys = getServiceParam($service_id, "extrakeys");
+	
+	if($extraKeys === false) {
+		$extraKeys = array();
+	} else {
+		$extraKeys = explode(" ", $extraKeys);
+		
+		foreach($extraKeys as $key) {
+			if(!isset($parameters[$key])) {
+				$parameters[$key] = array(0, '', 0, '');
+			}
+		}
+	}
+	
+	return $parameters;
 }
 
 //returns array of key => value
@@ -599,9 +655,16 @@ function channelSetDatabase($service_id, $db_settings) {
 //STYLE FUNCTIONS
 function channelDisplayConfiguration($k, $v, $parameters) {
 	$form_k = htmlspecialchars("gcform_$k");
-	$type = $parameters[$k][0];
-	$options = $parameters[$k][2];
-	$description = $parameters[$k][3];
+	
+	if(isset($parameters[$k])) {
+		$type = $parameters[$k][0];
+		$options = $parameters[$k][2];
+		$description = $parameters[$k][3];
+	} else {
+		$type = 0;
+		$options = 0;
+		$description = "";
+	}
 	?>
 	<tr>
 		<td><?= htmlspecialchars($k) ?></td>

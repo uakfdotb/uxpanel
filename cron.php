@@ -2,7 +2,6 @@
 
 include("include/common.php");
 include("config.php");
-include("include/session.php");
 include("include/dbconnect.php");
 
 include("include/account.php");

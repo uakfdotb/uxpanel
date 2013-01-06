@@ -1199,9 +1199,16 @@ function ghostSetDatabase($service_id, $db_settings) {
 //STYLE FUNCTIONS
 function ghostDisplayConfiguration($k, $v, $parameters) {
 	$form_k = htmlspecialchars("gcform_$k");
-	$type = $parameters[$k][0];
-	$options = $parameters[$k][2];
-	$description = $parameters[$k][3];
+	
+	if(isset($parameters[$k])) {
+		$type = $parameters[$k][0];
+		$options = $parameters[$k][2];
+		$description = $parameters[$k][3];
+	} else {
+		$type = 0;
+		$options = 0;
+		$description = "";
+	}
 	?>
 	<tr>
 		<td><?= htmlspecialchars($k) ?></td>
