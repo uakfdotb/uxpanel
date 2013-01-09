@@ -392,7 +392,7 @@ function databaseSearchUser($service_id, $username, $realm) {
 			
 			$result = mysql_query("SELECT time_created, time_active, num_games, (total_leftpercent / num_games)*100, lastgames FROM gametrack $where", $link);
 		} else {
-			$result = mysql_query("SELECT MIN(DATE(datetime)), MAX(DATE(datetime)), COUNT(*), AVG(`left`/duration)*100, '' FROM gameplayers $where", $link);
+			$result = mysql_query("SELECT MIN(DATE(datetime)), MAX(DATE(datetime)), COUNT(*), AVG(`left`/duration)*100, '' FROM  gameplayers LEFT JOIN games ON games.id = gameplayers.gameid $where", $link);
 		}
 		
 		$row = mysql_fetch_row($result);
