@@ -383,10 +383,18 @@ function databaseSearchUser($service_id, $username, $realm) {
 	
 	foreach($realms as $realm_it) {
 		$where = "WHERE name = '$username'";
-		if($realm_it != "*") $where .= " AND realm = '$realm_it'";
+		if($realm_it != "*") $where .= " AND spoofedrealm = '$realm_it'";
 		
 		//grab general statistics
-		$result = mysql_query("SELECT time_created, time_active, num_games, (total_leftpercent / num_games)*100, lastgames FROM gametrack $where", $link);
+		if($config['db_gametrack']) {
+			$where = "WHERE name='$username'";
+			if($realm_it != "*") $where .= " AND realm = '$realm_it'";
+			
+			$result = mysql_query("SELECT time_created, time_active, num_games, (total_leftpercent / num_games)*100, lastgames FROM gametrack $where", $link);
+		} else {
+			$result = mysql_query("SELECT MIN(DATE(datetime)), MAX(DATE(datetime)), COUNT(*), AVG(`left`/duration)*100, '' FROM gameplayers $where", $link);
+		}
+		
 		$row = mysql_fetch_row($result);
 		
 		$firstgame = $row[0];

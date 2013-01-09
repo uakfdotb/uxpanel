@@ -88,6 +88,10 @@ $config['db_password'] = "";
 # false if ban expiration disabled, or the column name otherwise
 $config['db_expiredate'] = 'expiredate';
 
+# whether gametrack script is in use
+#  see http://ent-usefulscripts.googlecode.com/svn/trunk/gametrack/gametrack.php
+$config['db_gametrack'] = false;
+
 ### ** slave settings
 
 # whether this is a slave uxpanel instance
