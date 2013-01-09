@@ -59,8 +59,9 @@ function databaseConnect($service_id) {
 		$link = mysql_connect($db_host, $db_username, $db_password);
 		mysql_select_db($db_name, $link);
 		
-		# set timezone for compatibility	
-		mysql_query("SET time_zone = '+0:00'", $link);
+		# set timezone for compatibility
+		# ** actually, this doesn't work since default is DATETIME instead of TIMESTAMP
+		//mysql_query("SET time_zone = '+0:00'", $link);
 		
 		# set global field
 		$GLOBALS['link_service_' . $service_id] = $link;
