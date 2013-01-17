@@ -11,7 +11,10 @@ include("../include/database.php");
 if(isset($_SESSION['account_id']) && isset($_REQUEST['id']) && is_numeric($_REQUEST['id']) && isset($_SESSION['is_' . $_REQUEST['id'] . '_database']) && isset($_REQUEST['gid']) && is_numeric($_REQUEST['gid'])) {
 	$gid = $_REQUEST['gid'];
 	$game = databaseGetGame($_REQUEST['id'], $gid);
-	get_page("game", "database", array('service_id' => $_REQUEST['id'], 'game' => $game, 'gid' => $gid));
+	
+	$replayBase = getServiceParam($_REQUEST['id'], 'replay_base');
+	
+	get_page("game", "database", array('service_id' => $_REQUEST['id'], 'game' => $game, 'gid' => $gid, 'replay_base' => $replayBase));
 } else {
 	header("Location: ../panel/");
 }

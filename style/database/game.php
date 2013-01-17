@@ -29,6 +29,15 @@
 	<td>Map</td>
 	<td><?= htmlspecialchars($game['map']) ?></td>
 </tr>
+<? if(isset($replay_base) && $replay_base !== false && count($replay_base) > 0) { ?>
+<tr>
+	<td>Replay</td>
+	<td>
+		<? $link = $replay_base . $game['id']; ?>
+		<a href="<?= $link ?>.w3g"><?= $game['id'] ?></a>
+	</td>
+</tr>
+<? } ?>
 </table>
 
 <p>Players in the game are listed below.</p>

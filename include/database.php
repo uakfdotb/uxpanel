@@ -172,7 +172,7 @@ function databaseGetGames($service_id, $start = 0) {
 }
 
 //information about a game
-//returns array(botid, gamename, ownername, creatorname, map, datetime, duration, players) or false on failure
+//returns array(botid, gamename, ownername, creatorname, map, datetime, duration, players, id) or false on failure
 //players is array of (name, ip, spoofedrealm, left, leftreason)
 //fast: if fast is set, it will only return the gamename
 function databaseGetGame($service_id, $game_id, $fast = false) {
@@ -181,10 +181,10 @@ function databaseGetGame($service_id, $game_id, $fast = false) {
 	
 	if($link) {
 		if(!$fast) {
-			$result = mysql_query("SELECT botid, gamename, ownername, creatorname, map, datetime, duration FROM games WHERE id = '$game_id'", $link);
+			$result = mysql_query("SELECT botid, gamename, ownername, creatorname, map, datetime, duration, id FROM games WHERE id = '$game_id'", $link);
 		
 			if($row = mysql_fetch_row($result)) {
-				$array = array('botid' => $row[0], 'gamename' => $row[1], 'ownername' => $row[2], 'creatorname' => $row[3], 'map' => $row[4], 'datetime' => $row[5], 'duration' => $row[6], 'players' => array());
+				$array = array('botid' => $row[0], 'gamename' => $row[1], 'ownername' => $row[2], 'creatorname' => $row[3], 'map' => $row[4], 'datetime' => $row[5], 'duration' => $row[6], 'players' => array(), 'id' => $row[7]);
 			
 				$result = mysql_query("SELECT name, ip, spoofedrealm, `left`, leftreason FROM gameplayers WHERE gameid = '$game_id'", $link);
 			
