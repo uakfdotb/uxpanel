@@ -518,4 +518,8 @@ function lockAction($action) {
 	return true;
 }
 
+function execBackground($command) {
+	return exec('php ' . escapeshellarg(includePath() . '/exec.php') . ' ' . escapeshellarg($command));
+}
+
 ?>

@@ -1075,9 +1075,9 @@ function ghostBotStart($service_id) {
 	$jail = jailEnabled($service_id);
 	
 	if($jail) {
-		$pid = jailExecute($service_id, "cd " . escapeshellarg(jailPath($service_id)) . " && nohup ./ghost++ ghost.cfg > /dev/null 2>&1 & echo $!");
+		$pid = jailExecuteBackground($service_id, "cd " . escapeshellarg(jailPath($service_id)) . " && nohup ./ghost++ ghost.cfg > /dev/null 2>&1 & echo $!");
 	} else {
-		$pid = shell_exec("cd " . escapeshellarg($config['ghost_path'] . $id) . " && nohup ./ghost++ ghost.cfg > /dev/null 2>&1 & echo $!");
+		$pid = execBackground("cd " . escapeshellarg($config['ghost_path'] . $id) . " && nohup ./ghost++ ghost.cfg > /dev/null 2>&1 & echo $!");
 	}
 	
 	//save the pid and last start time
