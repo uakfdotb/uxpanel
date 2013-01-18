@@ -60,4 +60,8 @@ if(function_exists('executeCronOther')) {
 	}
 }
 
+if(function_exists('executeCronShutdown')) {
+	executeCronShutdown();
+}
+
 ?>
