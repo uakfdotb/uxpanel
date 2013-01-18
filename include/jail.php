@@ -219,4 +219,19 @@ function jailExecute($service_id, $command, &$array = NULL, $shell = "sh") {
 	return exec("sudo -u " . escapeshellarg($jail_user) . " $shell -c " . escapeshellarg($command), $array);
 }
 
+# executes a command as the jail user in background
+function jailExecuteBackground($service_id, $command) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return;
+	}
+	
+	$jail_user = getServiceParam($service_id, "jail_user");
+	return execBackground("sudo -u " . escapeshellarg($jail_user) . " sh -c " . escapeshellarg($command));
+}
+
 ?>
