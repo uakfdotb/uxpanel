@@ -103,6 +103,7 @@ function authRemote($user_id, $service_id, $ip, $token) {
 	$service_id = escape($service_id);
 	$ip = escape($ip);
 	$token = escape($token);
+	$time = time();
 	
 	//housekeeping: delete entries older than two minutes
 	mysql_query("DELETE FROM remote_tokens WHERE time < '$time' - 120");
