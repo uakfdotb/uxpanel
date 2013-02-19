@@ -27,7 +27,7 @@ function jailPath($service_id) {
 }
 
 # filename must be escaped beforehand, and must be relative to the service base directory
-# context is either ghost or channel
+# context is ghost, channel, or minecraft
 # THIS IS NOT SUITABLE FOR LARGE FILES!
 function jailFileOpen($service_id, $context, $filename) {
 	global $config;
