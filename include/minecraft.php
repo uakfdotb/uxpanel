@@ -183,7 +183,7 @@ function minecraftGetStatus($service_id) {
 }
 
 //returns config array (k => v) on success, or false on failure
-//if skip is set, it will skip parameters not in channelParameters
+//if skip is set, it will skip parameters not in minecraftParameters
 function minecraftGetConfiguration($service_id, $skip = true) {
 	global $config, $minecraftParameters;
 	
@@ -331,6 +331,140 @@ function minecraftGetConfigFromRequest(&$parameters, &$request) {
 	}
 	
 	return $array;
+}
+
+//lists plugin files on the server
+//source is one of "plugins" or "repository"
+// repository: load maps from common repository in minecraft_path/plugins/
+function minecraftPluginList($service_id, $source = "plugins") {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: the identifier for this service is not set.";
+	}
+	
+	//ok iterate through maps
+	$extensions = array("jar");
+	
+	if($source == "repository") {
+		$dir = new DirectoryIterator($config['minecraft_path'] . "plugins");
+	} else if($source == "plugins") {
+		$dir = new DirectoryIterator($config['minecraft_path'] . $id . "/plugins");
+	} else {
+		return "Error: bad source to minecraftPluginList.";
+	}
+	
+	$array = array();
+	foreach($dir as $file) {
+		if($file->isFile()) {
+			$ext = getExtension($file->getFilename());
+			
+			if(in_array($ext, $extensions)) {
+		    	array_push($array, $file->getFilename());
+		    }
+		}
+	}
+
+	sort($array);
+	return $array;
+}
+
+//adds a plugin from repository
+//true on success, string on failure
+function minecraftPluginLink($service_id, $filename) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: the identifier for this service is not set.";
+	}
+	
+	//escape the file
+	$filename = escapeFile(baseName($filename));
+	
+	//determine the source and target files
+	$source = $config['minecraft_path'] . "plugins/" . $filename;
+	$target = $config['minecraft_path'] . $id . "/plugins/" . $filename;
+	
+	//if source doesn't exist or target exists
+	if(!file_exists($source)) {
+		return "Error: the requested file does not exist.";
+	} else if(file_exists($target)) {
+		return "Error: you already have a map with the same filename.";
+	}
+	
+	//create the symlink
+	$result = symlink($source, $target);
+
+	if($result === false) {
+		return "Error: could not link the files. Please contact support.";
+	} else {
+		return true;
+	}
+}
+
+//true on success, string error on failure
+//$files is the $_FILES array
+function minecraftPluginUpload($service_id, $files) {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: the identifier for this service is not set.";
+	}
+	
+	//check if we're allowed to upload files
+	$uploadable = getSerivecParam("service_id", "uploadable");
+	
+	if($uploadable != true) {
+		return "Uploads are not allowed for this service; instead, try linking from the plugins repository.";
+	}
+	
+	//make sure didn't exceed limit on maps
+	$pluginLimit = getServiceParam($service_id, "plimit");
+	
+	if($pluginLimit === false) {
+		$pluginLimit = 1000;
+	}
+	
+	$num_plugins = dirCount($config['minecraft_path'] . $id . "/plugins");
+	
+	if($num_plugins > $pluginLimit) {
+		return "You have exceeded the limit on the number of plugins. Please contact support.";
+	}
+
+	if((!empty($files["uploaded_file"])) && ($files['uploaded_file']['error'] == 0)) {
+	    //Check if the file is a map and it's size is less than 10MB
+	    $filename = basename($files['uploaded_file']['name']);
+	    $ext = getExtension($filename);
+	    
+	    if (($ext == "w3x" || $ext == "w3m") && ($files["uploaded_file"]["size"] < 10000000)) {
+	        //Determine the path to which we want to save this file
+	        $newname = $config['minecraft_path'] . $id . "/plugins/" . escapeFile($filename);
+	        //Check if the file with the same name is already exists on the server
+	        if (!file_exists($newname)) {
+	            //Attempt to move the uploaded file to it's new place
+	            if ((move_uploaded_file($files['uploaded_file']['tmp_name'], $newname))) {
+	                return true;
+	            } else {
+	                return "Error: could not move the uploaded file.";
+	            }
+	        } else {
+	            return "Error: a map with the same filename already exists!";
+	        }
+	    } else {
+	        return "Error: Only .jar plugin files under 10MB can be uploaded. Please contact support.";
+	    }
+    } else {
+        return "No file was uploaded, or there was an error during the upload.";
+    }
 }
 
 //returns string on failure or true on success
