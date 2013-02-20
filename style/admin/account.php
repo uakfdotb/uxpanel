@@ -11,7 +11,12 @@
 <input type="hidden" name="action" value="add" />
 Name: <input type="text" name="name" />
 <br />Description: <input type="text" name="description" />
-<br />Type: <input type="text" name="type" />
+<br />Type: <select name="type">
+	<option value="ghost">GHost</option>
+	<option value="channel">Channel bot</option>
+	<option value="database">Database</option>
+	<option value="minecraft">Minecraft</option>
+	</select>
 <br />Identifier: <input type="text" name="identifier" />
 <br />Price: <input type="text" name="price" value="N/A" />
 <br />Due: <input type="text" name="due" value="N/A" />
