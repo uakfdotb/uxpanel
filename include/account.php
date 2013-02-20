@@ -194,16 +194,37 @@ function setServiceParam($service_id, $key, $val) {
 }
 
 function getServiceParam($service_id, $key) {
-	global $db;
+	global $db, $config;
 	
 	$service_id = escape($service_id);
 	$key = escape($key);
-	$result = mysql_query("SELECT v FROM service_params WHERE service_id = '$service_id' AND k = '$key'", $db);
 	
-	if($row = mysql_fetch_array($result)) {
-		return $row[0];
+	//check parameter cache
+	if(isset($GLOBALS['paramcache'][$service_id])) {
+		if(isset($GLOBALS['paramcache'][$service_id][$key])) {
+			return $GLOBALS['paramcache'][$service_id][$key];
+		} else {
+			return false;
+		}
+	}
+	
+	//if slave, then cache all service parameters in global variable to make it faster
+	if($config['slave_enabled']) {
+		getServiceParams($service_id);
+		
+		if(isset($GLOBALS['paramcache'][$service_id][$key])) {
+			return $GLOBALS['paramcache'][$service_id][$key];
+		} else {
+			return false;
+		}
 	} else {
-		return false;
+		$result = mysql_query("SELECT v FROM service_params WHERE service_id = '$service_id' AND k = '$key'", $db);
+	
+		if($row = mysql_fetch_array($result)) {
+			return $row[0];
+		} else {
+			return false;
+		}
 	}
 }
 
@@ -218,6 +239,9 @@ function getServiceParams($service_id) {
 	while($row = mysql_fetch_array($result)) {
 		$array[$row[0]] = $row[1];
 	}
+	
+	//cache the parameters
+	$GLOBALS['paramcache'][$service_id] = $array;
 	
 	return $array;
 }
