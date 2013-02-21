@@ -121,7 +121,7 @@ function jailFileDelete($service_id, $filename) {
 	exec("sudo -u " . escapeshellarg($jail_user) . " rm " . escapeshellarg($jail_file));
 }
 
-function jailFileMove($service_id, $filename, $new_filename) {
+function jailFileMove($service_id, $filename, $new_filename, $command = "mv") {
 	global $config;
 	
 	//get the identifier
@@ -135,7 +135,7 @@ function jailFileMove($service_id, $filename, $new_filename) {
 	$jail_path = getServiceParam($service_id, "jail_path");
 	$jail_file = $jail_path . $filename;
 	$jail_file_new = $jail_path . $new_filename;
-	exec("sudo -u " . escapeshellarg($jail_user) . " mv " . escapeshellarg($jail_file) . " " . escapeshellarg($jail_file_new));
+	exec("sudo -u " . escapeshellarg($jail_user) . " $command " . escapeshellarg($jail_file) . " " . escapeshellarg($jail_file_new));
 }
 
 function jailSymlink($service_id, $source, $relativeFilename) {
