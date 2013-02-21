@@ -21,6 +21,10 @@ function getExtension($file_name) {
   return substr(strrchr($file_name,'.'),1);  
 }
 
+function removeExtension($file_name) {
+	return substr($file_name, 0, strrpos($file_name, '.'));
+}
+
 function indexInArray($value, $array) {
 	$counter = 0;
 	
@@ -276,6 +280,8 @@ function get_page($page, $context, $args = array()) {
 		$navbar = array('./' => "Home", 'account.php' => "Account", 'services.php' => "Services", 'announce.php' => "Announcements", 'index.php?action=logout' => "Logout");
 	} else if($context == "database") {
 		$navbar = array("./?id=$service_id" => "Home", "current.php?id=$service_id" => 'Running games', "games.php?id=$service_id" => 'Game log', "bans.php?id=$service_id" => 'Bans', "admins.php?id=$service_id" => 'Admins', "execute.php?id=$service_id" => "Execute command", "cron.php?id=$service_id" => "Cron", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
+	} else if($context == "minecraft") {
+		$navbar = array("./?id=$service_id" => "Status", "config.php?id=$service_id" => "Configuration", "plugin.php?id=$service_id" => "Plugins", "backup.php?id=$service_id" => "Backups", "log.php?id=$service_id" => "Log", "version.php?id=$service_id" => "Server version", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
 	} else if($context == "admin") {
 		$navbar = array('./' => "Home", 'accounts.php' => "Accounts", 'status.php' => "Status", 'announce.php' => "Announcements", 'index.php?action=logout' => "Logout");
 	} else {

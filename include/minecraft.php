@@ -130,6 +130,13 @@ function minecraftAddService($account_id, $service_name, $service_description, $
 	
 	fclose($fh);
 	
+	//copy files
+	copy($config['minecraft_path'] . "minecraft.jar", $directory . "minecraft.jar");
+	chmod($directory . "minecraft.jar", 0700);
+	
+	//make the subdirectories
+	mkdir($directory . "plugins", 0700);
+	
 	return $service_id;
 }
 
@@ -169,7 +176,7 @@ function minecraftGetStatus($service_id) {
 	$firstSpace = strpos($lastline, ' ');
 	
 	if($firstSpace !== false) {
-		$secondSpace = strpos($firstSpace, ' ', $firstSpace);
+		$secondSpace = strpos($lastline, ' ', $firstSpace + 1);
 		
 		if($secondSpace !== false) {
 			$strTime = substr($lastline, 0, $secondSpace);
@@ -303,7 +310,7 @@ function minecraftReconfigure($service_id, $array, $force = false) {
 	$fout = fopen($config['minecraft_path'] . $id . "/server.properties", 'w');
 	
 	foreach($minecraftConfiguration as $k => $v) {
-		fwrite($fout, "$k = $v\n");
+		fwrite($fout, "$k=$v\n");
 	}
 	
 	fclose($fout);
@@ -530,6 +537,39 @@ function minecraftServerUpload($service_id, $files, $type = "plugin") {
     }
 }
 
+//deletes a plugin
+//type is one of "plugins", "." (latter for backups)
+function minecraftServerDelete($service_id, $filename, $type = "plugins") {
+	global $config;
+	
+	//get the identifier
+	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	
+	if($id === false) {
+		return "Error: the identifier for this service is not set.";
+	}
+	
+	//if type is current directory, then it's for backups and restrict the extensions
+	if($type == "." && getExtension($filename) != 'uxbakzip') {
+		return "Error: invalid world backup filename to delete.";
+	}
+	
+	//escape the plugin
+	$filename = escapeFile(baseName($filename));
+	$relTarget = $type . "/" . $filename;
+	$target = $config['minecraft_path'] . $id . "/" . $relTarget;
+	
+	//unlink plugin, choose method depending on jail
+	$jail = jailEnabled($service_id);
+	if(!$jail) {
+		if(file_exists($target)) {
+			unlink($target);
+		}
+	} else {
+		jailFileDelete($service_id, $relTarget);
+	}
+}
+
 //returns string on failure or true on success
 function minecraftUpdateFile($service_id, $filename, $content) {
 	global $config, $minecraftUpdatableFiles;
@@ -638,15 +678,15 @@ function minecraftCommand($service_id, $command) {
 			$hostname = $configuration['server-ip'];
 		}
 		
-		RCon rcon = new RCon($hostname, $configuration['rcon.port'], $configuration['rcon.password']);
-		if(rcon->Auth()) {
+		$rcon = new RCon($hostname, $configuration['rcon.port'], $configuration['rcon.password']);
+		if($rcon->Auth()) {
 			//allow execution of multiple commands
 			if(is_array($command)) {
 				foreach($command as $str) {
-					rcon->rconCommand($command);
+					$rcon->rconCommand($command);
 				}
 			} else {
-				rcon->rconCommand($command);
+				$rcon->rconCommand($command);
 			}
 			
 			return true;
@@ -850,13 +890,13 @@ function minecraftStop($service_id, $restart = false) {
 	//stop the bot
 	$jail = jailEnabled($service_id);
 	if($jail) {
-		jailExecute($service_id, "kill -s INT $pid");
+		jailExecute($service_id, "kill $pid");
 	} else {
 		//make sure PID is still of pychop
 		$result = exec("cat /proc/$pid/cmdline");
 		
 		if(stripos($result, 'minecraft') !== false) {
-			exec("kill -s INT $pid");
+			exec("kill $pid");
 		}
 	}
 	
@@ -897,7 +937,7 @@ function minecraftDisplayConfiguration($k, $v, $parameters) {
 		<? if($type == 0 || $type == 1) { ?>
 			<input type="text" name="<?= $form_k ?>" value="<?= htmlspecialchars($v) ?>" style="align:left;" />
 		<? } else if($type == 2) {
-			$checked = $v == 1 ? " checked" : ""; ?>
+			$checked = ($v == "true" || $v == 1) ? " checked" : ""; ?>
 			<input type="checkbox" name="<?= $form_k ?>" value="<?= 1 ?>"<?= $checked ?> />
 		<? } else if($type == 3) { ?>
 			<select name="<?= $form_k ?>">
