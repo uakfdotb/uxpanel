@@ -191,6 +191,15 @@ function setServiceParam($service_id, $key, $val) {
 	} else if($val !== false) {	
 		mysql_query("INSERT INTO service_params (service_id, k, v) VALUES ('$service_id', '$key', '$val')", $db);
 	}
+	
+	//also update parameter cache
+	if(isset($GLOBALS['paramcache'][$service_id])) {
+		if($val !== false) {
+			$GLOBALS['paramcache'][$service_id][$key] = $val;
+		} else if(isset($GLOBALS['paramcache'][$service_id][$key])) {
+			unset($GLOBALS['paramcache'][$service_id][$key]);
+		}
+	}
 }
 
 function getServiceParam($service_id, $key) {
