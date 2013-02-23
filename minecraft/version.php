@@ -42,7 +42,7 @@ if(isset($_SESSION['account_id']) && isset($_REQUEST['id']) && is_numeric($_REQU
 	
 	# get the versions in repository
 	$versions = minecraftServerList($_REQUEST['id'], "versions");
-	get_page("plugin", "minecraft", array('service_id' => $_REQUEST['id'], 'versions' => $versions, 'message' => $message));
+	get_page("version", "minecraft", array('service_id' => $_REQUEST['id'], 'versions' => $versions, 'message' => $message));
 } else {
 	header("Location: ../panel/");
 }
