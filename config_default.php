@@ -14,10 +14,13 @@ $config['format_date'] = "j M Y";
 # duration to maintain a session with a user
 $config['session_duration'] = 1800;
 
+# path where all of the service files and such are kept
+$config['root_path'] = "/uxpanel/";
+
 ### ** GHost settings
 
 # path to GHost on server, with trailing slash
-$config['ghost_path'] = "/ghost/";
+$config['ghost_path'] = $config['root_path'] . "ghost/";
 
 # password to use for GHost users
 $config['ghost_password'] = "abc";
@@ -35,7 +38,7 @@ $config['ghost_password'] = "abc";
 ### ** channel settings
 
 # path to channel on server, with trailing slash
-$config['channel_path'] = "/channel/";
+$config['ghost_path'] = $config['root_path'] . "channel/";
 
 # additional channel parameters in chop.cfg
 #$config['channelParameters'] = array();
@@ -46,6 +49,11 @@ $config['channel_path'] = "/channel/";
 
 # additional pychop editable files
 #$config['channelUpdatableFiles'] = array();
+
+### ** Minecraft settings
+
+# path to Minecraft on server, with trailing slash
+$config['ghost_path'] = $config['root_path'] . "minecraft/";
 
 ### ** database settings
 
