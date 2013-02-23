@@ -140,6 +140,19 @@ function minecraftAddService($account_id, $service_name, $service_description, $
 	return $service_id;
 }
 
+//returns memory limit
+function minecraftMemoryLimit($service_id) {
+	$memoryLimit = getServiceParam($service_id, "memory");
+	
+	if($memoryLimit === false) {
+		$memoryLimit = 1024;
+	} else {
+		$memoryLimit = intval($memoryLimit);
+	}
+	
+	return $memoryLimit;
+}
+
 //returns array('status' => status string, 'err' => array(error strings), 'color' => suggested color)
 function minecraftGetStatus($service_id) {
 	global $config;
@@ -191,6 +204,31 @@ function minecraftGetStatus($service_id) {
 	}
 	
 	return array('status' => $status, 'err' => $errors, 'color' => $color);
+}
+
+//get (cpu utilization percent, memory utilization rss, memory limit) of the service process
+function minecraftResources($service_id) {
+	$pid = getServiceParam($service_id, "pid");
+	
+	if($pid === false || $pid == 0) {
+		return array(0, 0, minecraftMemoryLimit($service_id));
+	}
+	
+	$jail = jailEnabled($service_id);
+	if($jail) {
+		$result = jailExecute($service_id, "ps -p $pid -o %cpu,rss --noheader");
+	} else {
+		$result = exec("ps -p $pid -o %cpu,rss --noheader");
+	}
+	
+	$result = trim($result);
+	$parts = explode(" ", $result);
+	
+	if(count($parts) >= 2) {
+		return array(doubleval($parts[0]), round($parts[count($parts) - 1] / 1000, 1), minecraftMemoryLimit($service_id));
+	} else {
+		return array(0, 0, minecraftMemoryLimit($service_id));
+	}
 }
 
 //returns config array (k => v) on success, or false on failure
@@ -782,7 +820,7 @@ function minecraftRestoreWorld($service_id, $label) {
 	//require stopped to restore
 	$pid = getServiceParam($service_id, "pid");
 	
-	if($pid !== false & $pid != 0) {
+	if($pid !== false && $pid != 0) {
 		return "Error: please stop the server before restoring the world.";
 	}
 	
@@ -842,13 +880,7 @@ function minecraftStart($service_id) {
 	
 	//start the bot
 	$jail = jailEnabled($service_id);
-	$memoryLimit = getServiceParam($service_id, "memory");
-	
-	if($memoryLimit === false) {
-		$memoryLimit = 1024;
-	} else {
-		$memoryLimit = intval($memoryLimit);
-	}
+	$memoryLimit = minecraftMemoryLimit($service_id);
 	
 	if($jail) {
 		$pid = jailExecuteBackground($service_id, "cd " . escapeshellarg(jailPath($service_id)) . " && nohup java -jar -Xmx{$memoryLimit}M minecraft.jar > /dev/null 2>&1 & echo $!");
