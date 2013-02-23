@@ -51,6 +51,18 @@ The channel directory structure is similar, except these files are needed instea
 	- plugins/: a directory containing all of the plugins to use
 	- cfg/: a directory containing default cfg/ pychop configuration files (not including the main chop.cfg configuration file though)
 
+*** Minecraft directory configuration ***
+
+mkdir /home/uxpanel/minecraft/
+cd /home/uxpanel/minecraft/
+
+Add the following files:
+	- minecraft.jar: the default server version
+	- versions/: directory containing different server versions (including default)
+	- plugins/: directory containing plugins repository (users can symlink to this)
+
+To enable user to upload plugins and server versions, add a service parameter with key "uploadable" and value "1" (actually any value works). You should only do this if you're using the jail feature and have properly set user resource limits and filesystem permissions.
+
 *** Finishing up ***
 
 Now, the uxpanel installation is complete.
