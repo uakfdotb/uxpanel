@@ -7,6 +7,9 @@
 <p><b>Server status: </b> <?= $botStatus ?>
 <br /><b>Connection status: <font color="<?= $status['color'] ?>"><?= $status['status'] ?></font></b></p>
 
+<p><b>Memory utilization: </b> <?= $resources[1] ?> / <?= $resources[2] ?> MB
+<br /><b>CPU utilization: </b> <?= $resources[0] ?>%
+
 <? if(count($status['err']) > 0) { ?>
 	<p>Errors:</p>
 	<ul>
