@@ -19,7 +19,7 @@ Choose a file to upload: <input name="uploaded_file" type="file" />
 <input type="hidden" name="id" value="<?= $service_id ?>" />
 <input type="hidden" name="action" value="link" />
 <select name="filename">
-	<? foreach($repositoryPlugins as $name) { ?>
+	<? foreach($versions as $name) { ?>
 	<option value="<?= htmlspecialchars($name) ?>"><?= htmlspecialchars($name) ?></option>
 	<? } ?>
 	</select>

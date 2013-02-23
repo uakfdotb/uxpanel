@@ -382,7 +382,7 @@ function minecraftServerList($service_id, $source = "plugins") {
 		
 		$dir = new DirectoryIterator($config['minecraft_path'] . $id);
 	} else if($source == "versions") {
-		$dir = new DirectoryIterator($config['minecraft_path'] . $id . "/versions");
+		$dir = new DirectoryIterator($config['minecraft_path'] . "versions");
 	} else {
 		return "Error: bad source to minecraftPluginList.";
 	}
@@ -422,6 +422,7 @@ function minecraftServerLink($service_id, $filename, $source_override = false, $
 		$source = $config['minecraft_path'] . "plugins/" . $filename;
 	} else if($source_override == "version") {
 		$source = $config['minecraft_path'] . "versions/" . $filename;
+		$filename = "minecraft.jar"; //replace the standard jar file
 	} else {
 		$source = $source_override;
 	}
@@ -437,7 +438,16 @@ function minecraftServerLink($service_id, $filename, $source_override = false, $
 	if(!file_exists($source)) {
 		return "Error: the requested file does not exist.";
 	} else if(($jail && jailFileExists($service_id, $target)) || (!$jail && file_exists($target))) {
-		return "Error: you already have a file with the same filename.";
+		if($source_override == "version") {
+			//in this case we should be okay with deleting the file
+			if($jail) {
+				jailFileDelete($target);
+			} else {
+				unlink($target);
+			}
+		} else {
+			return "Error: you already have a file with the same filename.";
+		}
 	}
 	
 	//create the symlink
