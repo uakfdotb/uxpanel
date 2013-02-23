@@ -35,7 +35,7 @@ $config['ghost_password'] = "abc";
 ### ** channel settings
 
 # path to channel on server, with trailing slash
-$config['ghost_path'] = $config['root_path'] . "channel/";
+$config['channel_path'] = $config['root_path'] . "channel/";
 
 # additional channel parameters in chop.cfg
 #$config['channelParameters'] = array();
@@ -50,7 +50,7 @@ $config['ghost_path'] = $config['root_path'] . "channel/";
 ### ** Minecraft settings
 
 # path to Minecraft on server, with trailing slash
-$config['ghost_path'] = $config['root_path'] . "minecraft/";
+$config['minecraft_path'] = $config['root_path'] . "minecraft/";
 
 ### ** database settings
 
