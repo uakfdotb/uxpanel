@@ -726,7 +726,13 @@ function minecraftCommand($service_id, $command) {
 			$hostname = $configuration['server-ip'];
 		}
 		
-		$rcon = new RCon($hostname, $configuration['rcon.port'], $configuration['rcon.password']);
+		require_once(includePath() . "/rcon.php");
+		try {
+			$rcon = new RCon($hostname, $configuration['rcon.port'], $configuration['rcon.password']);
+		} catch(Exception $e) {
+			return "Error: $e";
+		}
+		
 		if($rcon->Auth()) {
 			//allow execution of multiple commands
 			if(is_array($command)) {
@@ -777,11 +783,8 @@ function minecraftBackupWorld($service_id, $label) {
 	}
 	
 	//try to turn off saving and do a save of the current world state
+	// don't worry if this fails; if it fails the server probably isn't running...
 	$result = minecraftCommand($service_id, array("save-off", "save-all"));
-	
-	if($result !== true) {
-		return "Failed to execute saving command.";
-	}
 	
 	sleep(2); //wait for anything to finish
 	
@@ -795,10 +798,10 @@ function minecraftBackupWorld($service_id, $label) {
 	
 	//zip the directory simply, delete the temporary directory
 	if($jail) {
-		jailExecute($service_id, "zip -r " . escapeshellarg(jailPath($service_id) . $label . ".uxbakzip") . " " . escapeshellarg(jailPath($service_id) . "world_tmp"));
+		jailExecute($service_id, "cd " . escapeshellarg(jailPath($service_id)) . " && zip -r " . escapeshellarg(jailPath($service_id) . $label . ".uxbakzip") . " world_tmp");
 		jailExecute($service_id, "rm -r " . escapeshellarg(jailPath($service_id) . "world_tmp"));
 	} else {
-		exec("zip -r " . escapeshellarg($config['minecraft_path'] . $id . "/" . $label . ".uxbakzip") . " " . escapeshellarg($config['minecraft_path'] . $id . "/world_tmp"));
+		exec("cd " . escapeshellarg($config['minecraft_path'] . $id) . " && zip -r " . escapeshellarg($config['minecraft_path'] . $id . "/" . $label . ".uxbakzip") . " world_tmp");
 		delete_directory($config['minecraft_path'] . $id . "/world_tmp");
 	}
 	
