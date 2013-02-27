@@ -321,10 +321,49 @@ function ghostGetStatus($service_id) {
 	return array('status' => $status, 'err' => $errors, 'color' => $color);
 }
 
+function ghostGetParameters($service_id) {
+	global $ghostParameters;
+	$parameters = $ghostParameters;
+	
+	//we ignore some settings to allow panel administrator to restrict configurations
+	// on a per-user basis; this is a space-separated list of configuration keys
+	$ignoreKeys = getServiceParam($service_id, "ignorekeys");
+	
+	if($ignoreKeys === false) {
+		$ignoreKeys = array();
+	} else {
+		$ignoreKeys = explode(" ", $ignoreKeys);
+		
+		foreach($ignoreKeys as $key) {
+			if(isset($parameters[$key])) {
+				unset($parameters[$key]);
+			}
+		}
+	}
+	
+	//similarly, we add some extra keys
+	$extraKeys = getServiceParam($service_id, "extrakeys");
+	
+	if($extraKeys === false) {
+		$extraKeys = array();
+	} else {
+		$extraKeys = explode(" ", $extraKeys);
+		
+		foreach($extraKeys as $key) {
+			if(!isset($parameters[$key])) {
+				$parameters[$key] = array(0, '', 0, '');
+			}
+		}
+	}
+	
+	return $parameters;
+}
+
 //returns config array (k => v) on success, or false on failure
 //if skip is set, it will skip parameters not in ghostParameters
 function ghostGetConfiguration($service_id, $skip = true) {
-	global $config, $ghostParameters;
+	global $config;
+	$parameters = ghostGetParameters($service_id);
 	
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
@@ -356,7 +395,7 @@ function ghostGetConfiguration($service_id, $skip = true) {
 					$val = trim(substr($buffer, $index + 3));
 				}
 				
-				if(!$skip || isset($ghostParameters[$key])) {
+				if(!$skip || isset($parameters[$key])) {
 					$array[$key] = $val;
 				}
 			}
@@ -558,7 +597,8 @@ function ghostConfigurationComparator($a, $b) {
 //returns true on success, false on failure
 //if remove is set, the keys of array will be removed instead of added
 function ghostReconfigure($service_id, $array, $remove = false) {
-	global $config, $ghostParameters, $bnetParameters;
+	global $config, $bnetParameters;
+	$parameters = ghostGetParameters($service_id);
 	
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
@@ -573,8 +613,8 @@ function ghostReconfigure($service_id, $array, $remove = false) {
 	//modify the configuration based on input $array settings
 	foreach($array as $k => $v) {
 		if(!$remove) {
-			if(isset($ghostParameters[$k])) {
-				$ghostConfiguration[$k] = ghostEscape($ghostParameters[$k][0], $ghostParameters[$k][1], $ghostParameters[$k][2], $v);
+			if(isset($parameters[$k])) {
+				$ghostConfiguration[$k] = ghostEscape($parameters[$k][0], $parameters[$k][1], $parameters[$k][2], $v);
 			} else if(($bkey_info = ghostConfigurationBnetKey($k)) !== false && isset($bnetParameters[$bkey_info['key']])) {
 				$subkey = $bkey_info['key'];
 				$ghostConfiguration[$k] = ghostEscape($bnetParameters[$subkey][0], $bnetParameters[$subkey][1], $bnetParameters[$subkey][2], $v);
