@@ -117,7 +117,7 @@ function recursiveCopy( $path, $dest )
 	}
 }
 
-function delete_directory($dirname) {
+function delete_directory($dirname, $maintain_dir = false) {
 	if (is_dir($dirname))
 		$dir_handle = opendir($dirname);
 	if (!$dir_handle)
@@ -127,11 +127,15 @@ function delete_directory($dirname) {
 			if (!is_dir($dirname."/".$file))
 				unlink($dirname."/".$file);
 			else
-				delete_directory($dirname.'/'.$file);	 
+				delete_directory($dirname.'/'.$file, $maintain_dir);	 
 		}
 	}
 	closedir($dir_handle);
-	rmdir($dirname);
+	
+	if(!$maintain_dir) {
+		rmdir($dirname);
+	}
+	
 	return true;
 }
 

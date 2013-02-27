@@ -11,7 +11,7 @@ include("../include/ghost.php");
 if(isset($_SESSION['account_id']) && isset($_REQUEST['id']) && is_numeric($_REQUEST['id']) && isset($_SESSION['is_' . $_REQUEST['id'] . '_ghost'])) {
 	if(isset($_POST['action']) && $_POST['action'] == "update") {
 		//create array of configurations we are updating
-		$array = ghostGetConfigFromRequest($ghostParameters, $_REQUEST);
+		$array = ghostGetConfigFromRequest(ghostGetParameters($_REQUEST['id']), $_REQUEST);
 		ghostReconfigure($_REQUEST['id'], $array);
 		
 		if(!isset($_SESSION['noredirect'])) {
