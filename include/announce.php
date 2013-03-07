@@ -19,7 +19,7 @@ function announceDelete($id) {
 function announceGet() {
 	global $config, $db;
 	
-	$result = mysql_query("SELECT id, title, body, time FROM announcements ORDER BY time", $db);
+	$result = mysql_query("SELECT id, title, body, time FROM announcements ORDER BY time DESC", $db);
 	$array = array();
 	
 	while($row = mysql_fetch_row($result)) {
