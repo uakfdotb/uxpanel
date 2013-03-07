@@ -564,7 +564,7 @@ function channelBotStart($service_id) {
 	if($jail) {
 		$pid = jailExecuteBackground($service_id, "cd " . escapeshellarg(jailPath($service_id)) . " && nohup ./chop++ chop.cfg > /dev/null 2>&1 & echo $!");
 	} else {
-		$pid = execBackground("cd " . escapeshellarg($config['ghost_path'] . $id) . " && nohup ./chop++ chop.cfg > /dev/null 2>&1 & echo $!");
+		$pid = execBackground("cd " . escapeshellarg($config['channel_path'] . $id) . " && nohup ./chop++ chop.cfg > /dev/null 2>&1 & echo $!");
 	}
 	
 	//save the pid and last start time
