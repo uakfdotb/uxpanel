@@ -22,7 +22,7 @@
 	<?
 	$username_array = explode("\t", $game['usernames']);
 
-	for($i = 0; $i * 3 < count($username_array) - 2; $i += 3) {
+	for($i = 0; $i < count($username_array) - 2; $i += 3) {
 	?>
 		<tr>
 			<td><?= htmlspecialchars($username_array[$i]) ?></td>
