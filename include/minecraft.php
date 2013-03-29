@@ -523,7 +523,7 @@ function minecraftServerUpload($service_id, $files, $type = "plugin") {
 	//check if we're allowed to upload files
 	$uploadable = getServiceParam("service_id", "uploadable");
 	
-	if($uploadable != true) {
+	if($uploadable != 1) {
 		return "Uploads are not allowed for this service; instead, try using the linking form.";
 	}
 	
