@@ -11,7 +11,7 @@
 <li><a href="iplookup.php?id=<?= $service_id ?>">Find IP addresses that a given player has used</a></li>
 </ul>
 
-<form method="post" action="ban.php">
+<form method="post" action="ban.php" onsubmit="return confirm('Are you sure you want to clear all bans from your database?');">
 <input type="hidden" name="id" value="<?= $service_id ?>" />
 <input type="hidden" name="doclearbans" value="do" />
 <input type="submit" name="clearbans" value="Clear all bans" />
