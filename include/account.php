@@ -8,7 +8,8 @@ function adminRegisterAccount($email, $password, $name) {
 	if(substr($password, 0, 6) == ":hash:") {
 		$password = escape(substr($password, 6));
 	} else {
-		$password = escape(chash($password));
+		require_once(includePath() . "/pbkdf2.php");
+		$password = escape("*pbkdf2*" . create_hash($password));
 	}
 	
 	$name = escape($name);

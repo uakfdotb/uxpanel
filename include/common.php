@@ -17,6 +17,17 @@ function chash($str) {
 	return hash('sha512', $str);
 }
 
+function validatePassword($password, $good_password, $format) {
+	if($format == "pbkdf2") {
+		require_once(includePath() . "/pbkdf2.php");
+		return pbkdf2_validate_password($password, $good_password);
+	} else if($format == "hash") {
+		return chash($password) == $good_password;
+	} else {
+		return $password == $good_password;
+	}
+}
+
 function getExtension($file_name) {
   return substr(strrchr($file_name,'.'),1);  
 }

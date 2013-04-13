@@ -137,7 +137,7 @@ function channelAddService($account_id, $service_name, $service_description, $id
 	
 	//copy files
 	copy($config['channel_path'] . "language.cfg", $directory . "language.cfg");
-	copy($config['channel_path'] . "chop++", $directory . "chop++");
+	symlink($config['channel_path'] . "chop++", $directory . "chop++");
 	chmod($directory . "chop++", 0700);
 	copy($config['channel_path'] . "cfg/ask8ball.txt", $directory . "cfg/ask8ball.txt");
 	copy($config['channel_path'] . "cfg/command.txt", $directory . "cfg/command.txt");
