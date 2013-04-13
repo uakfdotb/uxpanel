@@ -414,9 +414,9 @@ function ghostGetConfiguration($service_id, $skip = true) {
 //returns false if key is not bnet, or array('id' => bnet id, 'key' => subkey) if it is
 function ghostConfigurationBnetKey($key) {
 	if(substr($key, 0, 4) == "bnet" && ($index = strpos($key, "_")) !== false) {
-		$bnet_id = $key[4];
+		$bnet_id = intval(substr($key, 4, $index - 4));
 		
-		if($bnet_id == "_") {
+		if($bnet_id == "" || $bnet_id == 0) {
 			$bnet_id = 1;
 		}
 		
@@ -476,7 +476,7 @@ function ghostAddBnet($service_id, $server) {
 		}
 	}
 	
-	if($next_bnet_id > 9) {
+	if($next_bnet_id > 13) {
 		return "Error: too many Battle.net connections. Contact support.";
 	}
 	
