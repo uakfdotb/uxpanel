@@ -476,7 +476,7 @@ function ghostAddBnet($service_id, $server) {
 		}
 	}
 	
-	if($next_bnet_id > 13) {
+	if($next_bnet_id > 9) {
 		return "Error: too many Battle.net connections. Contact support.";
 	}
 	
