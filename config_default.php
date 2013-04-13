@@ -74,7 +74,16 @@ $config['mail_fromname'] = "UXPanel";
 $config['admin_username'] = "admin";
 
 # admin account password
+# see admin_passwordformat for how to securely add a password here
 $config['admin_password'] = "";
+
+# this is the format of the admin password
+#  plain: plaintext; admin_password simply contains the desired password
+#  hash: hashed with the sha512 algorithm
+#   use the chash function in common.php, or mkpasswd.php
+#  pbkdf2: hashed using PBKDF2 standard
+#   use the pbkdf2_create_hash function in pbkdf2.php, or mkpasswd.php
+$config['admin_passwordformat'] = "plain";
 
 ### ** database information
 

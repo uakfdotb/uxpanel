@@ -1,5 +1,37 @@
 <?php
 
+function authCheckPassword($parameter, $password, $parameter_type = "email") {
+	$parameter = escape($parameter);
+	
+	if($parameter_type == "id") {
+		$result = mysql_query("SELECT password FROM accounts WHERE id = '$parameter'");
+	} else {
+		$result = mysql_query("SELECT password FROM accounts WHERE email = '$parameter'");
+	}
+	
+	if($row = mysql_fetch_row($result)) {
+		$good_password = $row[0];
+		$format = "hash";
+		
+		if($good_password[0] == "*" && strlen($good_password) > 2) {
+			$parts = explode("*", substr($good_password, 1), 2);
+			
+			if(count($parts) == 2) {
+				$format = $parts[0];
+				$good_password = $parts[1];
+			}
+		}
+		
+		if(!validatePassword($password, $good_password, $format)) {
+			return false;
+		}
+	} else {
+		return false;
+	}
+	
+	return true;
+}
+
 //true: success login
 //-1: try again later
 //-2: invalid information
@@ -10,15 +42,16 @@ function authAccount($email, $password, $force = false) {
 	if(!checkLock("checkuser")) {
 		return -1;
 	}
-
-	$email = escape($email);
-	$password = escape(chash($password));
 	
-	if($force) {
-		$result = mysql_query("SELECT id, email, name FROM accounts WHERE email = '$email'", $db);
-	} else {
-		$result = mysql_query("SELECT id, email, name FROM accounts WHERE email = '$email' AND password = '$password'", $db);
+	if(!$force) {
+		if(!authCheckPassword($email, $password)) {
+			lockAction("checkuser");
+			return -2;
+		}
 	}
+	
+	$email = escape($email);
+	$result = mysql_query("SELECT id, email, name FROM accounts WHERE email = '$email'", $db);
 	
 	if($row = mysql_fetch_row($result)) {
 		$_SESSION['account_id'] = $row[0];
@@ -38,7 +71,7 @@ function authAdmin($username, $password) {
 		return false;
 	}
 	
-	if($config['admin_username'] == $username && $config['admin_password'] == $password) {
+	if($config['admin_username'] == $username && validatePassword($password, $config['admin_password'], $config['admin_passwordformat'])) {
 		return true;
 	} else {
 		lockAction("checkadmin");
@@ -63,18 +96,17 @@ function authChangePassword($user_id, $old_password, $new_password) {
 		return "The old and new passwords are identical.";
 	}
 	
-	$user_id = escape($user_id);
-	$old_password = escape(chash($old_password));
-	$new_password = escape(chash($new_password));
-	
-	$result = mysql_query("UPDATE accounts SET password = '$new_password' WHERE id = '$user_id' AND password = '$old_password'", $db);
-	
-	if(mysql_affected_rows() == 0) {
+	if(!authCheckPassword($user_id, $old_password, "id")) {
 		lockAction("checkuser");
 		return "The password you entered is not correct.";
-	} else {
-		return true;
 	}
+	
+	$user_id = escape($user_id);
+	
+	require_once(includePath() . "/pbkdf2.php");
+	$new_password = escape("*pbkdf2*" . pbkdf2_create_hash($new_password));
+	$result = mysql_query("UPDATE accounts SET password = '$new_password' WHERE id = '$user_id'", $db);
+	return true;
 }
 
 //going to go to remote
