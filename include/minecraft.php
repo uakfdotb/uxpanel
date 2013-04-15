@@ -193,7 +193,7 @@ function minecraftGetStatus($service_id) {
 		
 		if($secondSpace !== false) {
 			$strTime = substr($lastline, 0, $secondSpace);
-			$time = strtotime($strTime);
+			$time = strtotime($strTime . " UTC");
 			
 			if(time() - $time > 1200) {
 				$status = "Down";
