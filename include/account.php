@@ -9,7 +9,7 @@ function adminRegisterAccount($email, $password, $name) {
 		$password = escape(substr($password, 6));
 	} else {
 		require_once(includePath() . "/pbkdf2.php");
-		$password = escape("*pbkdf2*" . create_hash($password));
+		$password = escape("*pbkdf2*" . pbkdf2_create_hash($password));
 	}
 	
 	$name = escape($name);
