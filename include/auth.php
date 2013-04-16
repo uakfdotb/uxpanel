@@ -1,15 +1,19 @@
 <?php
 
 function authCheckPassword($parameter, $password, $parameter_type = "email") {
+	global $db;
 	$parameter = escape($parameter);
 	
 	if($parameter_type == "id") {
-		$result = mysql_query("SELECT password FROM accounts WHERE id = '$parameter'");
+		$result = $db->query("SELECT password FROM accounts WHERE id = '$parameter'");
 	} else {
-		$result = mysql_query("SELECT password FROM accounts WHERE email = '$parameter'");
+		$result = $db->query("SELECT password FROM accounts WHERE email = '$parameter'");
 	}
 	
-	if($row = mysql_fetch_row($result)) {
+	$row = $result->fetch_array();
+	$result->close();
+	
+	if($row) {
 		$good_password = $row[0];
 		$format = "hash";
 		
@@ -51,9 +55,11 @@ function authAccount($email, $password, $force = false) {
 	}
 	
 	$email = escape($email);
-	$result = mysql_query("SELECT id, email, name FROM accounts WHERE email = '$email'", $db);
+	$result = $db->query("SELECT id, email, name FROM accounts WHERE email = '$email'");
+	$row = $result->fetch_array();
+	$result->close();
 	
-	if($row = mysql_fetch_row($result)) {
+	if($row) {
 		$_SESSION['account_id'] = $row[0];
 		$_SESSION['account_email'] = $row[1];
 		$_SESSION['account_name'] = $row[2];
@@ -105,13 +111,15 @@ function authChangePassword($user_id, $old_password, $new_password) {
 	
 	require_once(includePath() . "/pbkdf2.php");
 	$new_password = escape("*pbkdf2*" . pbkdf2_create_hash($new_password));
-	$result = mysql_query("UPDATE accounts SET password = '$new_password' WHERE id = '$user_id'", $db);
+	$db->query("UPDATE accounts SET password = '$new_password' WHERE id = '$user_id'");
 	return true;
 }
 
 //going to go to remote
 //returns token
 function authRemoteRegister($user_id, $service_id, $ip) {
+	global $db;
+	
 	$user_id = escape($user_id);
 	$service_id = escape($service_id);
 	$ip = escape($ip);
@@ -121,27 +129,31 @@ function authRemoteRegister($user_id, $service_id, $ip) {
 	$token = uid(128);
 	
 	//insert user
-	mysql_query("INSERT INTO remote_tokens (user_id, service_id, ip, token, time) VALUES ('$user_id', '$service_id', '$ip', '$token', '$time')");
+	$db->query("INSERT INTO remote_tokens (user_id, service_id, ip, token, time) VALUES ('$user_id', '$service_id', '$ip', '$token', '$time')");
 	
 	//housekeeping: delete entries older than two minutes
-	mysql_query("DELETE FROM remote_tokens WHERE time < '$time' - 120");
+	$db->query("DELETE FROM remote_tokens WHERE time < '$time' - 120");
 	
 	return $token;
 }
 
 //authenticate as remote, returns true on success or false on failure
 function authRemote($user_id, $service_id, $ip, $token) {
+	global $db;
+	
 	$user_id = escape($user_id);
 	$service_id = escape($service_id);
 	$ip = escape($ip);
 	$token = escape($token);
 	
 	//get user
-	$result = mysql_query("SELECT id FROM remote_tokens WHERE user_id = '$user_id' AND service_id = '$service_id' AND ip = '$ip' AND token = '$token'");
+	$result = $db->query("SELECT id FROM remote_tokens WHERE user_id = '$user_id' AND service_id = '$service_id' AND ip = '$ip' AND token = '$token'");
+	$row = $result->fetch_array();
+	$result->close();
 	
-	if($row = mysql_fetch_row($result)) {
+	if($row) {
 		//delete the token
-		mysql_query("DELETE FROM remote_tokens WHERE id = '{$row[0]}'");
+		$db->query("DELETE FROM remote_tokens WHERE id = '{$row[0]}'");
 		
 		//update session
 		$_SESSION['account_id'] = $user_id;

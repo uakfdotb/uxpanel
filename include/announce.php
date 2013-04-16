@@ -5,27 +5,28 @@ function announceAdd($title, $body) {
 	
 	$title = escape($title);
 	$body = escape($body);
-	mysql_query("INSERT INTO announcements (title, body, time) VALUES ('$title', '$body', '" . time() . "')", $db);
-	return mysql_insert_id();
+	$db->query("INSERT INTO announcements (title, body, time) VALUES ('$title', '$body', '" . time() . "')");
+	return $db->insert_id;
 }
 
 function announceDelete($id) {
 	global $db;
 	$id = escape($id);
-	mysql_query("DELETE FROM announcements WHERE id = '$id'", $db);
+	$db->query("DELETE FROM announcements WHERE id = '$id'");
 }
 
 //returns a sorted array of (id, title, body, time)
 function announceGet() {
 	global $config, $db;
 	
-	$result = mysql_query("SELECT id, title, body, time FROM announcements ORDER BY time DESC", $db);
+	$result = $db->query("SELECT id, title, body, time FROM announcements ORDER BY time DESC");
 	$array = array();
 	
-	while($row = mysql_fetch_row($result)) {
+	while($row = $result->fetch_array()) {
 		$array[] = array('id' => $row[0], 'title' => $row[1], 'body' => $row[2], 'time' => date($config['format_date'], $row[3]));
 	}
 	
+	$result->close();
 	return $array;
 }
 

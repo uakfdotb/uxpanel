@@ -2,11 +2,15 @@
 
 //if slave, use persistent connections in case we are remote and making connection takes a while
 if($config['slave_enabled']) {
-	$db = mysql_pconnect($config['db_hostname'], $config['db_username'], $config['db_password']) or die("Could not connect to MySQL database. Check config.php.<br />" . mysql_error());
+	$prefix = "p:"; 
 } else {
-	$db = mysql_connect($config['db_hostname'], $config['db_username'], $config['db_password']) or die("Could not connect to MySQL database. Check config.php.<br />" . mysql_error());
+	$prefix = "";
 }
 
-mysql_select_db($config['db_name'], $db) or die("Could not select the uxpanel MySQL database. Check config.php.<br />" . mysql_error());
+$db = new mysqli($prefix . $config['db_hostname'], $config['db_username'], $config['db_password'], $config['db_name']);
+
+if($db->connect_error) {
+	die("Could not connect to MySQL database. Check config.php.<br />" . $db->connect_error);
+}
 
 ?>
