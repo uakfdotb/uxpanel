@@ -13,27 +13,28 @@ function adminRegisterAccount($email, $password, $name) {
 	}
 	
 	$name = escape($name);
-	mysql_query("INSERT INTO accounts (email, password, name) VALUES ('$email', '$password', '$name')", $db);
+	$db->query("INSERT INTO accounts (email, password, name) VALUES ('$email', '$password', '$name')");
 }
 
 function adminDeleteAccount($id) {
 	global $db;
 	
 	$id = escape($id);
-	mysql_query("DELETE FROM accounts WHERE id = '$id'", $db);
+	$db->query("DELETE FROM accounts WHERE id = '$id'");
 }
 
 //returns array of account_id => array(email, name)
 function adminGetAccounts() {
 	global $db;
 	
-	$result = mysql_query("SELECT id, email, name FROM accounts", $db);
+	$result = $db->query("SELECT id, email, name FROM accounts");
 	$accounts = array();
 	
-	while($row = mysql_fetch_row($result)) {
+	while($row = $result->fetch_array()) {
 		$accounts[$row[0]] = array('email' => $row[1], 'name' => $row[2]);
 	}
 	
+	$result->close();
 	return $accounts;
 }
 
@@ -42,11 +43,13 @@ function adminGetAccount($id) {
 	global $db;
 	
 	$id = escape($id);
-	$result = mysql_query("SELECT email, name FROM accounts WHERE id = '$id'", $db);
+	$result = $db->query("SELECT email, name FROM accounts WHERE id = '$id'");
 	
-	if($row = mysql_fetch_array($result)) {
+	if($row = $result->fetch_array()) {
+		$result->close();
 		return array('email' => $row[0], 'name' => $row[1]);
 	} else {
+		$result->close();
 		return array("User not found", "User not found");
 	}
 }
@@ -59,14 +62,14 @@ function createService($account_id, $service_name, $service_description, $servic
 	$service_description = escape($service_description);
 	$service_type = escape($service_type);
 	
-	mysql_query("INSERT INTO services (account_id, name, description, type) VALUES ('$account_id', '$service_name', '$service_description', '$service_type')", $db);
-	$service_id = intval(mysql_insert_id());
+	$db->query("INSERT INTO services (account_id, name, description, type) VALUES ('$account_id', '$service_name', '$service_description', '$service_type')");
+	$service_id = intval($db->insert_id);
 	
 	foreach($service_param as $key => $val) {
 		$key = escape($key);
 		$val = escape($val);
 		
-		mysql_query("INSERT INTO service_params (service_id, k, v) VALUES ('$service_id', '$key', '$val')", $db);
+		$db->query("INSERT INTO service_params (service_id, k, v) VALUES ('$service_id', '$key', '$val')");
 	}
 	
 	return $service_id;
@@ -75,11 +78,13 @@ function createService($account_id, $service_name, $service_description, $servic
 function getServiceType($service_id) {
 	global $db;
 	$service_id = escape($service_id);
-	$result = mysql_query("SELECT type FROM services WHERE id = '$service_id'", $db);
+	$result = $db->query("SELECT type FROM services WHERE id = '$service_id'");
 	
-	if($row = mysql_fetch_array($result)) {
+	if($row = $result->fetch_array()) {
+		$result->close();
 		return $row[0];
 	} else {
+		$result->close();
 		return false;
 	}
 }
@@ -89,13 +94,14 @@ function getServices($account_id) {
 	global $db;
 	
 	$account_id = escape($account_id);
-	$result = mysql_query("SELECT id, name, description, type FROM services WHERE account_id = '$account_id'", $db);
+	$result = $db->query("SELECT id, name, description, type FROM services WHERE account_id = '$account_id'");
 	$array = array();
 	
-	while($row = mysql_fetch_row($result)) {
+	while($row = $result->fetch_array()) {
 		$array[] = array('id' => $row[0], 'name' => $row[1], 'description' => $row[2], 'type' => $row[3]);
 	}
 	
+	$result->close();
 	return $array;
 }
 
@@ -104,11 +110,13 @@ function getService($service_id) {
 	global $db;
 	
 	$service_id = escape($service_id);
-	$result = mysql_query("SELECT name, description, type FROM services WHERE id = '$service_id'", $db);
+	$result = $db->query("SELECT name, description, type FROM services WHERE id = '$service_id'");
 	
-	if($row = mysql_fetch_array($result)) {
+	if($row = $result->fetch_array()) {
+		$result->close();
 		return array('name' => $row[0], 'description' => $row[1], 'type' => $row[2]);
 	} else {
+		$result->close();
 		return false;
 	}
 }
@@ -118,19 +126,21 @@ function removeService($service_id) {
 	global $db;
 	
 	$service_id = escape($service_id);
-	mysql_query("DELETE FROM services WHERE id = '$service_id'", $db);
-	mysql_query("DELETE FROM service_params WHERE service_id = '$service_id'", $db);
+	$db->query("DELETE FROM services WHERE id = '$service_id'");
+	$db->query("DELETE FROM service_params WHERE service_id = '$service_id'");
 }
 
 //returns the account id associated with a service, or false on failure
 function getServiceOwner($service_id) {
 	global $db;
 	$service_id = escape($service_id);
-	$result = mysql_query("SELECT account_id FROM services WHERE id = '$service_id'", $db);
+	$result = $db->query("SELECT account_id FROM services WHERE id = '$service_id'");
 	
-	if($row = mysql_fetch_array($result)) {
+	if($row = $result->fetch_array()) {
+		$result->close();
 		return $row[0];
 	} else {
+		$result->close();
 		return false;
 	}
 }
@@ -181,16 +191,16 @@ function setServiceParam($service_id, $key, $val) {
 	}
 	
 	//check if key exists already (in that case just update the existing one)
-	$result = mysql_query("SELECT id FROM service_params WHERE service_id = '$service_id' AND k = '$key'", $db);
+	$result = $db->query("SELECT id FROM service_params WHERE service_id = '$service_id' AND k = '$key'");
 	
-	if($row = mysql_fetch_array($result)) {
+	if($row = $result->fetch_array()) {
 		if($val !== false) {
-			mysql_query("UPDATE service_params SET v = '$val' WHERE id = '{$row[0]}'", $db);
+			$db->query("UPDATE service_params SET v = '$val' WHERE id = '{$row[0]}'");
 		} else {
-			mysql_query("DELETE FROM service_params WHERE id = '{$row[0]}'", $db);
+			$db->query("DELETE FROM service_params WHERE id = '{$row[0]}'");
 		}
 	} else if($val !== false) {	
-		mysql_query("INSERT INTO service_params (service_id, k, v) VALUES ('$service_id', '$key', '$val')", $db);
+		$db->query("INSERT INTO service_params (service_id, k, v) VALUES ('$service_id', '$key', '$val')");
 	}
 	
 	//also update parameter cache
@@ -228,9 +238,11 @@ function getServiceParam($service_id, $key) {
 			return false;
 		}
 	} else {
-		$result = mysql_query("SELECT v FROM service_params WHERE service_id = '$service_id' AND k = '$key'", $db);
-	
-		if($row = mysql_fetch_array($result)) {
+		$result = $db->query("SELECT v FROM service_params WHERE service_id = '$service_id' AND k = '$key'");
+		$row = $result->fetch_array();
+		$result->close();
+		
+		if($row) {
 			return $row[0];
 		} else {
 			return false;
@@ -243,16 +255,17 @@ function getServiceParams($service_id) {
 	global $db;
 	
 	$service_id = escape($service_id);
-	$result = mysql_query("SELECT k, v FROM service_params WHERE service_id = '$service_id'", $db);
+	$result = $db->query("SELECT k, v FROM service_params WHERE service_id = '$service_id'");
 	$array = array();
 	
-	while($row = mysql_fetch_array($result)) {
+	while($row = $result->fetch_array()) {
 		$array[$row[0]] = $row[1];
 	}
 	
 	//cache the parameters
 	$GLOBALS['paramcache'][$service_id] = $array;
 	
+	$result->close();
 	return $array;
 }
 

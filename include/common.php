@@ -6,7 +6,8 @@ function string_begins_with($string, $search)
 }
 
 function escape($str) {
-	return mysql_real_escape_string($str);
+	global $db;
+	return $db->escape_string($str);
 }
 
 function escapePHP($str) {
@@ -456,8 +457,11 @@ function checkLock($action) {
 	$ip = escape($_SERVER['REMOTE_ADDR']);
 	$action = escape($action);
 	
-	$result = mysql_query("SELECT id,time,num FROM locks WHERE ip='" . $ip . "' AND action='" . $action . "'", $db) or die(mysql_error());
-	if($row = mysql_fetch_array($result)) {
+	$result = $db->query("SELECT id,time,num FROM locks WHERE ip='" . $ip . "' AND action='" . $action . "'");
+	$row = $result->fetch_array();
+	$result->close();
+	
+	if($row) {
 		$id = $row['id'];
 		$time = $row['time'];
 		$count = $row['num']; //>=0 count means it's a regular initial lock; -1 count means overload lock
@@ -494,8 +498,10 @@ function lockAction($action) {
 	$replace_id = -1;
 
 	//first find records with ip/action
-	$result = mysql_query("SELECT id,time,num FROM locks WHERE ip='" . $ip . "' AND action='" . $action . "'", $db) or die(mysql_error());
-	if($row = mysql_fetch_array($result)) {
+	$result = $db->query("SELECT id,time,num FROM locks WHERE ip='" . $ip . "' AND action='" . $action . "'");
+	$row = $result->fetch_aray();
+	
+	if($row) {
 		$id = $row['id'];
 		$time = $row['time'];
 		$count = $row['num']; //>=0 count means it's a regular initial lock; -1 count means overload lock
@@ -510,10 +516,10 @@ function lockAction($action) {
 				//increase the count; maybe initiate an OVERLOAD
 				$count = $count + 1;
 				if($count >= $lock_count_overload[$action]) {
-					mysql_query("UPDATE locks SET num='-1', time='" . time() . "' WHERE ip='" . $ip . "'", $db) or die(mysql_error());
+					$db->query("UPDATE locks SET num='-1', time='" . time() . "' WHERE ip='" . $ip . "'");
 					return false;
 				} else {
-					mysql_query("UPDATE locks SET num='" . $count . "', time='" . time() . "' WHERE ip='" . $ip . "'", $db) or die(mysql_error());
+					$db->query("UPDATE locks SET num='" . $count . "', time='" . time() . "' WHERE ip='" . $ip . "'");
 				}
 			}
 		} else {
@@ -525,16 +531,16 @@ function lockAction($action) {
 			}
 		}
 	} else {
-		mysql_query("INSERT INTO locks (ip, time, action, num) VALUES ('" . $ip . "', '" . time() . "', '" . $action . "', '1')", $db) or die(mysql_error());
+		$db->query("INSERT INTO locks (ip, time, action, num) VALUES ('" . $ip . "', '" . time() . "', '" . $action . "', '1')");
 	}
 
 	if($replace_id != -1) {
-		mysql_query("UPDATE locks SET num='1', time='" . time() .  "' WHERE id='" . $replace_id . "'", $db) or die(mysql_error());
+		$db->query("UPDATE locks SET num='1', time='" . time() .  "' WHERE id='" . $replace_id . "'");
 	}
 
 	//some housekeeping
 	$delete_time = time() - $lock_time_max;
-	mysql_query("DELETE FROM locks WHERE time<='" . $delete_time . "'", $db);
+	$db->query("DELETE FROM locks WHERE time<='" . $delete_time . "'");
 
 	return true;
 }

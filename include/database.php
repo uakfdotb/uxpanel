@@ -56,8 +56,7 @@ function databaseConnect($service_id) {
 	$db_password = getServiceParam($service_id, 'db_password');
 	
 	if($db_name !== false && $db_host !== false && $db_username !== false && $db_password !== false) {
-		$link = mysql_connect($db_host, $db_username, $db_password);
-		mysql_select_db($db_name, $link);
+		$link = new mysqli($db_host, $db_username, $db_password, $db_name);
 		
 		# set timezone for compatibility
 		# ** actually, this doesn't work since default is DATETIME instead of TIMESTAMP
@@ -96,7 +95,7 @@ function databaseSetup($service_id, $reset = false) {
 			
 			if(strlen($buffer) > 0 && $buffer[0] != "#") {
 				if(strpos($buffer, ";") !== false) {
-					mysql_query($query_buffer . $buffer, $link);
+					$link->query($query_buffer . $buffer);
 					$query_buffer = "";
 				} else {
 					$query_buffer .= $buffer . " ";
@@ -119,15 +118,16 @@ function databaseGetRealms($service_id) {
 		return array();
 	}
 	
-	$result = mysql_query("SELECT DISTINCT spoofedrealm FROM gameplayers", $link);
+	$result = $link->query("SELECT DISTINCT spoofedrealm FROM gameplayers");
 	$array = array("uswest.battle.net", "useast.battle.net", "europe.battle.net", "asia.battle.net");
 	
-	while($row = mysql_fetch_array($result)) {
+	while($row = $result->fetch_array()) {
 		if($row[0] != "" && !in_array($row[0], $array)) {
 			$array[] = $row[0];
 		}
 	}
 	
+	$result->close();
 	return $array;
 }
 
@@ -138,13 +138,14 @@ function databaseGetRunning($service_id) {
 	$link = databaseConnect($service_id);
 	
 	if($link) {
-		$result = mysql_query("SELECT botid, gamename, ownername, creatorname, map, slotstaken, slotstotal, usernames, totalgames, totalplayers, id FROM gamelist WHERE gamename != '' ORDER BY botid, id DESC", $link);
+		$result = $link->query("SELECT botid, gamename, ownername, creatorname, map, slotstaken, slotstotal, usernames, totalgames, totalplayers, id FROM gamelist WHERE gamename != '' ORDER BY botid, id DESC");
 		$array = array();
 		
-		while($row = mysql_fetch_row($result)) {
+		while($row = $result->fetch_array()) {
 			$array[] = array('botid' => $row[0], 'gamename' => $row[1], 'ownername' => $row[2], 'creatorname' => $row[3], 'map' => $row[4], 'slotstaken' => $row[5], 'slotstotal' => $row[6], 'usernames' => $row[7], 'totalgames' => $row[8], 'totalplayers' => $row[9], 'id' => $row[10]);
 		}
 		
+		$result->close();
 		return $array;
 	} else {
 		return array();
@@ -158,13 +159,14 @@ function databaseGetGames($service_id, $start = 0) {
 	$link = databaseConnect($service_id);
 	
 	if($link) {
-		$result = mysql_query("SELECT id, botid, gamename, ownername, creatorname, map, datetime, duration FROM games WHERE gamename != '' ORDER BY id DESC LIMIT $start, 30", $link);
+		$result = $link->query("SELECT id, botid, gamename, ownername, creatorname, map, datetime, duration FROM games WHERE gamename != '' ORDER BY id DESC LIMIT $start, 30");
 		$array = array();
 		
-		while($row = mysql_fetch_row($result)) {
+		while($row = $result->fetch_array()) {
 			$array[] = array('id' => $row[0], 'botid' => $row[1], 'gamename' => $row[2], 'ownername' => $row[3], 'creatorname' => $row[4], 'map' => $row[5], 'datetime' => $row[6], 'duration' => $row[7]);
 		}
 		
+		$result->close();
 		return $array;
 	} else {
 		return array();
@@ -181,14 +183,14 @@ function databaseGetGame($service_id, $game_id, $fast = false) {
 	
 	if($link) {
 		if(!$fast) {
-			$result = mysql_query("SELECT botid, gamename, ownername, creatorname, map, datetime, duration, id FROM games WHERE id = '$game_id'", $link);
+			$result = $link->query("SELECT botid, gamename, ownername, creatorname, map, datetime, duration, id FROM games WHERE id = '$game_id'");
 		
-			if($row = mysql_fetch_row($result)) {
+			if($row = $result->fetch_array()) {
 				$array = array('botid' => $row[0], 'gamename' => $row[1], 'ownername' => $row[2], 'creatorname' => $row[3], 'map' => $row[4], 'datetime' => $row[5], 'duration' => $row[6], 'players' => array(), 'id' => $row[7]);
 			
-				$result = mysql_query("SELECT name, ip, spoofedrealm, `left`, leftreason FROM gameplayers WHERE gameid = '$game_id'", $link);
+				$result = $link->query("SELECT name, ip, spoofedrealm, `left`, leftreason FROM gameplayers WHERE gameid = '$game_id'");
 			
-				while($row = mysql_fetch_row($result)) {
+				while($row = $result->fetch_array()) {
 					$array['players'][] = array('name' => $row[0], 'ip' => $row[1], 'spoofedrealm' => $row[2], 'left' => $row[3], 'leftreason' => $row[4]);
 				}
 			
@@ -197,9 +199,11 @@ function databaseGetGame($service_id, $game_id, $fast = false) {
 				return false;
 			}
 		} else {
-			$result = mysql_query("SELECT gamename FROM games WHERE id = '$game_id'", $link);
+			$result = $link->query("SELECT gamename FROM games WHERE id = '$game_id'");
+			$row = $result->fetch_array();
+			$result->close();
 			
-			if($row = mysql_fetch_row($result)) {
+			if($row) {
 				return $row[0];
 			} else {
 				return "Unknown gamename";
@@ -247,41 +251,45 @@ function databaseBanUser($service_id, $username, $realm, $duration, $reason, $un
 		
 		//unban the user if we're supposed to
 		if($unban) {
-			mysql_query("DELETE FROM bans WHERE name = '$username' AND server = '$realm_it'", $link);
+			$link->query("DELETE FROM bans WHERE name = '$username' AND server = '$realm_it'");
 			$message .= "Unbanned $username on $realm_it<br />";
 			continue;
 		}
 		
 		//make sure user isn't already banned
-		$result = mysql_query("SELECT COUNT(*) FROM bans WHERE name = '$username' AND server = '$realm_it' AND context = 'ttr.cloud'", $link);
-		$row = mysql_fetch_row($result);
+		$result = $link->query("SELECT COUNT(*) FROM bans WHERE name = '$username' AND server = '$realm_it' AND context = 'ttr.cloud'");
+		$row = $result->fetch_array();
+		$result->close();
+		
 		if($row[0] > 0) {
 			$message .= "Skipping $realm_it: already banned!<br />";
 			continue;
 		}
 		
 		//last few IP addresses logged; limited to 15 addresses within the last 30 days
-		$result = mysql_query("SELECT DISTINCT ip FROM gameplayers LEFT JOIN games ON gameplayers.gameid = games.id $where AND datetime > DATE_SUB( NOW( ), INTERVAL 30 DAY) ORDER BY gameplayers.id DESC LIMIT 15", $link);
+		$result = $link->query("SELECT DISTINCT ip FROM gameplayers LEFT JOIN games ON gameplayers.gameid = games.id $where AND datetime > DATE_SUB( NOW( ), INTERVAL 30 DAY) ORDER BY gameplayers.id DESC LIMIT 15");
 		
 		//only continue if both we have found some addresses and we don't want to just ban by name
-		if(!$name_only && mysql_num_rows($result) > 0) {
-			while($row = mysql_fetch_row($result)) {
+		if(!$name_only && $result->num_rows > 0) {
+			while($row = $result->fetch_array()) {
 				$ip = escape($row[0]);
 				
 				//if this is for non-spoofchecked users, ban on default realm
 				$ban_realm = $realm_it;
 				if($ban_realm == "") $ban_realm = $default_realm;
 				
-				mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, expiredate, context) VALUES ('0', '$ban_realm', '$username', '$ip', CURDATE(), '', 'uxpanel', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ), 'ttr.cloud')", $link);
+				$link->query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, expiredate, context) VALUES ('0', '$ban_realm', '$username', '$ip', CURDATE(), '', 'uxpanel', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ), 'ttr.cloud')");
 				$message .= "Banned used IP address [$ip] on $realm_it<br />";
 			}
 		} else {
 			//no previous games found; ban by username only if this is an actual realm
 			if($realm_it != "") {
-				mysql_query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, expiredate, context) VALUES ('0', '$realm_it', '$username', '', CURDATE(), '', 'uxpanel', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ), 'ttr.cloud')", $link);
+				$link->query("INSERT INTO bans (botid, server, name, ip, date, gamename, admin, reason, expiredate, context) VALUES ('0', '$realm_it', '$username', '', CURDATE(), '', 'uxpanel', '$reason', DATE_ADD( NOW( ), INTERVAL $duration second ), 'ttr.cloud')");
 				$message .= "Banned by name on $realm_it<br />";
 			}
 		}
+		
+		$result->close();
 	}
 	
 	if($ban_aliases) {
@@ -325,7 +333,7 @@ function databaseDeleteBan($service_id, $ban_id) {
 	}
 	
 	$ban_id = escape($ban_id);
-	mysql_query("DELETE FROM bans WHERE id = '$ban_id'", $link);
+	$link->query("DELETE FROM bans WHERE id = '$ban_id'");
 }
 
 //returns array of id => (name, server, ip, admin, gamename, reason, date, expiredate)
@@ -336,13 +344,14 @@ function databaseGetBans($service_id) {
 		return array();
 	}
 	
-	$result = mysql_query("SELECT id, name, server, ip, admin, gamename, reason, date, expiredate FROM bans ORDER BY id", $link);
+	$result = $link->query("SELECT id, name, server, ip, admin, gamename, reason, date, expiredate FROM bans ORDER BY id");
 	$array = array();
 	
-	while($row = mysql_fetch_array($result)) {
+	while($row = $result->fetch_array()) {
 		$array[$row[0]] = array('name' => $row[1], 'server' => $row[2], 'ip' => $row[3], 'admin' => $row[4], 'gamename' => $row[5], 'reason' => $row[6], 'date' => $row[7], 'expiredate' => $row[8]);
 	}
 	
+	$result->close();
 	return $array;
 }
 
@@ -369,8 +378,8 @@ function databaseSearchUser($service_id, $username, $realm) {
 		if($realm_it != "*") $where .= " AND realm = '$realm_it'";
 		
 		//grab general statistics
-		$result = mysql_query("SELECT time_created, time_active, num_games, (total_leftpercent / num_games)*100, lastgames FROM gametrack $where", $link);
-		$row = mysql_fetch_row($result);
+		$result = $link->query("SELECT time_created, time_active, num_games, (total_leftpercent / num_games)*100, lastgames FROM gametrack $where") or die($link->error);
+		$row = $result->fetch_array();
 		
 		$firstgame = $row[0];
 		$lastgame = $row[1];
@@ -388,9 +397,9 @@ function databaseSearchUser($service_id, $username, $realm) {
 		
 		if($totalgames != 0) {
 			//ban history
-			$result = mysql_query("SELECT admin, reason, gamename, date, expiredate FROM ban_history WHERE name = '$username' AND server = '$realm_it' ORDER BY id DESC LIMIT 6", $link);
+			$result = $link->query("SELECT admin, reason, gamename, date, expiredate FROM ban_history WHERE name = '$username' AND server = '$realm_it' ORDER BY id DESC LIMIT 6");
 			
-			while($row = mysql_fetch_row($result)) {
+			while($row = $result->fetch_array()) {
 				$array[$realm_it]['bans'][] = array('admin' => $row[0], 'reason' => $row[1], 'gamename' => $row[2], 'date' => $row[3], 'expiredate' => $row[4]);
 			}
 		}
@@ -410,13 +419,14 @@ function databaseIPLookup($service_id, $name, $realm, $hours = 1440) {
 	$name = escape($name);
 	$realm = escape($realm);
 	
-	$result = mysql_query("SELECT DISTINCT ip FROM gameplayers LEFT JOIN games ON games.id = gameplayers.gameid WHERE name = '$name' AND spoofedrealm = '$realm' AND games.datetime > DATE_SUB( NOW( ), INTERVAL $hours HOUR) AND ip != '0.0.0.0' AND ip != '127.0.0.1'", $link);
+	$result = $link->query("SELECT DISTINCT ip FROM gameplayers LEFT JOIN games ON games.id = gameplayers.gameid WHERE name = '$name' AND spoofedrealm = '$realm' AND games.datetime > DATE_SUB( NOW( ), INTERVAL $hours HOUR) AND ip != '0.0.0.0' AND ip != '127.0.0.1'");
 	$array = array();
 	
-	while($row = mysql_fetch_array($result)) {
+	while($row = $result->fetch_array()) {
 		$array[] = $row[0];
 	}
 	
+	$result->close();
 	return $array;
 }
 
@@ -445,20 +455,21 @@ function databaseNameLookup($service_id, $ip) {
 		
 		if($counter >= 2) {
 			$safe_ip = escape($safe_ip);
-			$result = mysql_query("SELECT DISTINCT name, spoofedrealm FROM gameplayers WHERE ip LIKE '$safe_ip%' LIMIT 20", $link);
+			$result = $link->query("SELECT DISTINCT name, spoofedrealm FROM gameplayers WHERE ip LIKE '$safe_ip%' LIMIT 20");
 		}
 	}
 	
 	if($result === false) {
-		$result = mysql_query("SELECT DISTINCT name, spoofedrealm FROM gameplayers WHERE ip = '$ip'", $link);
+		$result = $link->query("SELECT DISTINCT name, spoofedrealm FROM gameplayers WHERE ip = '$ip'");
 	}
 	
 	$array = array();
 	
-	while($row = mysql_fetch_row($result)) {
+	while($row = $result->fetch_row()) {
 		$array[] = array($row[0], $row[1]);
 	}
 	
+	$result->close();
 	return $array;
 }
 
@@ -529,8 +540,8 @@ function databaseLastPlayed($service_id, $name) {
 	}
 	
 	$name = escape($name);
-	$result = mysql_query("SELECT MAX(games.datetime) FROM gameplayers LEFT JOIN games ON gameplayers.gameid = games.id WHERE gameplayers.name = '$name'", $link);
-	$row = mysql_fetch_row($result);
+	$result = $link->query("SELECT MAX(games.datetime) FROM gameplayers LEFT JOIN games ON gameplayers.gameid = games.id WHERE gameplayers.name = '$name'");
+	$row = $result->fetch_array();
 	
 	if(is_null($row[0])) return "Never";
 	else return $row[0];
@@ -544,13 +555,14 @@ function databaseGetAdmins($service_id) {
 		return array();
 	}
 	
-	$result = mysql_query("SELECT id, name, server FROM admins ORDER BY id", $link);
+	$result = $link->query("SELECT id, name, server FROM admins ORDER BY id");
 	$array = array();
 	
-	while($row = mysql_fetch_row($result)) {
+	while($row = $result->fetch_array()) {
 		$array[$row[0]] = array('name' => $row[1], 'realm' => $row[2]);
 	}
 	
+	$result->close();
 	return $array;
 }
 
@@ -563,7 +575,7 @@ function databaseAddAdmin($service_id, $name, $server) {
 	
 	$name = escape($name);
 	$server = escape($server);
-	mysql_query("INSERT INTO admins (botid, name, server) VALUES ('0', '$name', '$server')", $link);
+	$link->query("INSERT INTO admins (botid, name, server) VALUES ('0', '$name', '$server')");
 }
 
 function databaseDeleteAdmin($service_id, $admin_id) {
@@ -574,7 +586,7 @@ function databaseDeleteAdmin($service_id, $admin_id) {
 	}
 	
 	$admin_id = escape($admin_id);
-	mysql_query("DELETE FROM admins WHERE id = '$admin_id'", $link);
+	$link->query("DELETE FROM admins WHERE id = '$admin_id'");
 }
 
 function databaseExecuteCommand($service_id, $botid, $command) {
@@ -586,7 +598,7 @@ function databaseExecuteCommand($service_id, $botid, $command) {
 	
 	$botid = escape($botid);
 	$command = escape($command);
-	mysql_query("INSERT INTO commands (botid, command) VALUES ('$botid', '$command')", $link);
+	$link->query("INSERT INTO commands (botid, command) VALUES ('$botid', '$command')");
 }
 
 function databaseClearBans($service_id) {
@@ -596,7 +608,7 @@ function databaseClearBans($service_id) {
 		return array();
 	}
 	
-	mysql_query("DELETE FROM bans", $link);
+	$link->query("DELETE FROM bans");
 }
 
 //returns array of key => value
