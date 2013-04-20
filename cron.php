@@ -11,15 +11,15 @@ include($config['cron_path']);
 
 //run database cron, but only if we are the master uxpanel instance
 if(!$config['slave_enabled']) {
-	$result = mysql_query("SELECT id FROM services WHERE type = 'database'", $db);
+	$result = $db->query("SELECT id FROM services WHERE type = 'database'");
 
-	while($row = mysql_fetch_array($result)) {
+	while($row = $result->fetch_array()) {
 		$service_id = $row[0];
 	
 		$params = array();
-		$result2 = mysql_query("SELECT k, v FROM service_params WHERE service_id = '$service_id'", $db);
+		$result2 = $db->query("SELECT k, v FROM service_params WHERE service_id = '$service_id'");
 	
-		while($row2 = mysql_fetch_array($result2)) {
+		while($row2 = $result2->fetch_array()) {
 			$params[$row2[0]] = $row2[1];
 		}
 	
@@ -34,16 +34,16 @@ if(function_exists('executeCronOther')) {
 	// if the slave instance is the correct instance
 	//as a result, we simply run on all slave instances
 	//this means that the cron script being called shouldn't do anything bad
-	$result = mysql_query("SELECT id, type FROM services WHERE type != 'database'", $db);
+	$result = $db->query("SELECT id, type FROM services WHERE type != 'database'");
 
-	while($row = mysql_fetch_array($result)) {
+	while($row = $result->fetch_array()) {
 		$service_id = $row[0];
 		$service_type = $row[1];
 	
 		$params = array();
-		$result2 = mysql_query("SELECT k, v FROM service_params WHERE service_id = '$service_id'", $db);
+		$result2 = $db->query("SELECT k, v FROM service_params WHERE service_id = '$service_id'");
 	
-		while($row2 = mysql_fetch_array($result2)) {
+		while($row2 = $result2->fetch_array()) {
 			$params[$row2[0]] = $row2[1];
 		}
 		
