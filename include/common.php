@@ -499,7 +499,7 @@ function lockAction($action) {
 
 	//first find records with ip/action
 	$result = $db->query("SELECT id,time,num FROM locks WHERE ip='" . $ip . "' AND action='" . $action . "'");
-	$row = $result->fetch_aray();
+	$row = $result->fetch_array();
 	
 	if($row) {
 		$id = $row['id'];
