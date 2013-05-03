@@ -475,7 +475,7 @@ function ghostAddBnet($service_id, $server) {
 			$next_bnet_id = $k + 1;
 		}
 	}
-	
+
 	if($next_bnet_id > 13) {
 		return "Error: too many Battle.net connections. Contact support.";
 	}
@@ -1191,7 +1191,7 @@ function ghostBotStop($service_id, $restart = false) {
 }
 
 function ghostBotRestart($service_id) {
-	if(!ghostBotCanStart()) {
+	if(!ghostBotCanStart($service_id)) {
 		return "Error: please wait ten minutes between starting or restarting the bot.";
 	}
 
