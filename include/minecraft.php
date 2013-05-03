@@ -91,91 +91,91 @@ function minecraftEscape($type, $default, $type_extra, $value) {
 //string: error message
 function minecraftAddService($account_id, $service_name, $service_description, $identifier) {
 	global $config;
-	
+
 	$identifier = stripAlphaNumeric($identifier);
-	
+
 	//set target directory
 	$directory = $config['minecraft_path'] . $identifier . '/';
-	
+
 	if(file_exists($directory)) {
 		return "the target directory $directory already exists!";
 	}
-	
+
 	//register database
 	$service_id = createService($account_id, $service_name, $service_description, "minecraft", array('id' => $identifier, 'memory' => '1024'));
-	
+
 	if($service_id > 999 && $id3 == -1) {
 		return "Error: exceeded the maximum three-digit ID!";
 	} else if($id3 == -1) {
 		$id3 = $service_id;
 	}
-	
+
 	//create target directory
 	mkdir($directory, 0700);
-	
+
 	//create properties file
 	$fh = fopen($directory . 'server.properties', 'w');
-	
+
 	foreach($GLOBALS['defaultMinecraftParameters'] as $key => $value) {
 		if($value == '$RAND$') {
 			$value = uid(32);
 		}
-		
+
 		fwrite($fh, "$key=$value\n");
 	}
-	
+
 	foreach($GLOBALS['minecraftParameters'] as $key => $array) {
 		fwrite($fh, "$key={$array[1]}\n");
 	}
-	
+
 	fclose($fh);
-	
+
 	//copy files
 	copy($config['minecraft_path'] . "minecraft.jar", $directory . "minecraft.jar");
 	chmod($directory . "minecraft.jar", 0700);
-	
+
 	//make the subdirectories
 	mkdir($directory . "plugins", 0700);
-	
+
 	return $service_id;
 }
 
 //returns memory limit
 function minecraftMemoryLimit($service_id) {
 	$memoryLimit = getServiceParam($service_id, "memory");
-	
+
 	if($memoryLimit === false) {
 		$memoryLimit = 1024;
 	} else {
 		$memoryLimit = intval($memoryLimit);
 	}
-	
+
 	return $memoryLimit;
 }
 
 //returns array('status' => status string, 'err' => array(error strings), 'color' => suggested color)
 function minecraftGetStatus($service_id) {
 	global $config;
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return array('status' => "ERROR: failed to find bot identifier", 'err' => array(), 'color' => 'red');
 	}
-	
+
 	//read last lines of the log file and scan for interesting things
 	$lines = minecraftGetLog($service_id, 1000);
-	
+
 	if($lines === false) {
 		return array('status' => "Failed to read log file", 'err' => array(), 'color' => 'red');
 	}
-	
+
 	$lastline = $lines[count($lines) - 1];
 	$errors = array();
 	$status = "Up, no activity";
 	$color = "orange";
-	
+
 	//scan lines for interesting things
 	foreach($lines as $line) {
 		# check if user has joined game recently
@@ -184,17 +184,17 @@ function minecraftGetStatus($service_id) {
 			$color = "green";
 		}
 	}
-	
+
 	# check last line to see if the bot is still running
 	$firstSpace = strpos($lastline, ' ');
-	
+
 	if($firstSpace !== false) {
 		$secondSpace = strpos($lastline, ' ', $firstSpace + 1);
-		
+
 		if($secondSpace !== false) {
 			$strTime = substr($lastline, 0, $secondSpace);
 			$time = strtotime($strTime . " UTC");
-			
+
 			if(time() - $time > 1200) {
 				$status = "Down";
 				$errors[] = "Does not appear to be running!";
@@ -202,28 +202,28 @@ function minecraftGetStatus($service_id) {
 			}
 		}
 	}
-	
+
 	return array('status' => $status, 'err' => $errors, 'color' => $color);
 }
 
 //get (cpu utilization percent, memory utilization rss, memory limit) of the service process
 function minecraftResources($service_id) {
 	$pid = getServiceParam($service_id, "pid");
-	
+
 	if($pid === false || $pid == 0) {
 		return array(0, 0, minecraftMemoryLimit($service_id));
 	}
-	
+
 	$jail = jailEnabled($service_id);
 	if($jail) {
 		$result = jailExecute($service_id, "ps -p $pid -o %cpu,rss --noheader");
 	} else {
 		$result = exec("ps -p $pid -o %cpu,rss --noheader");
 	}
-	
+
 	$result = trim($result);
 	$parts = explode(" ", $result);
-	
+
 	if(count($parts) >= 2) {
 		return array(doubleval($parts[0]), round($parts[count($parts) - 1] / 1000, 1), minecraftMemoryLimit($service_id));
 	} else {
@@ -235,75 +235,75 @@ function minecraftResources($service_id) {
 //if skip is set, it will skip parameters not in minecraftParameters
 function minecraftGetConfiguration($service_id, $skip = true) {
 	global $config, $minecraftParameters;
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return false;
 	}
-	
+
 	//we ignore some settings to allow panel administrator to restrict configurations
 	// on a per-user basis; this is a space-separated list of configuration keys
 	$ignoreKeys = getServiceParam($service_id, "ignorekeys");
-	
+
 	if($ignoreKeys === false) {
 		$ignoreKeys = array();
 	} else {
 		$ignoreKeys = explode(" ", $ignoreKeys);
 	}
-	
+
 	//similarly, we add some extra keys
 	$extraKeys = getServiceParam($service_id, "extrakeys");
-	
+
 	if($extraKeys === false) {
 		$extraKeys = array();
 	} else {
 		$extraKeys = explode(" ", $extraKeys);
 	}
-	
+
 	$jail = jailEnabled($service_id);
 	if($jail) {
 		jailFileOpen($service_id, "minecraft", "server.properties");
 	}
-	
+
 	//read the configuration file
 	$fh = fopen($config['minecraft_path'] . $id . "/server.properties", 'r');
 	$array = array();
-	
+
 	while(($buffer = fgets($fh, 4096)) !== false) {
 		$buffer = trim($buffer);
-		
+
 		if(strlen($buffer) > 3 && $buffer[0] != '#') {
 			$index = strpos($buffer, "=");
-			
+
 			if($index !== false) {
 				$key = trim(substr($buffer, 0, $index));
 				$val = "";
-				
+
 				if(strlen($buffer) > $index + 1) {
 					$val = trim(substr($buffer, $index + 1));
 				}
-				
+
 				if(!$skip || ((isset($minecraftParameters[$key]) || in_array($key, $extraKeys)) && !in_array($key, $ignoreKeys))) {
 					$array[$key] = $val;
 				}
 			}
 		}
 	}
-	
+
 	fclose($fh);
-	
+
 	if($jail) {
 		jailFileClose($service_id, "minecraft", "server.properties", false);
 	}
-	
+
 	return $array;
 }
 
 function minecraftConfigurationComparatorHelper($x) {
 	global $minecraftParameters;
-	
+
 	if(isset($minecraftParameters[$x])) {
 		return indexInArray($x, $minecraftParameters);
 	} else {
@@ -321,17 +321,17 @@ function minecraftConfigurationComparator($a, $b) {
 //if force is set, all keys will be written whether or not they are in minecraftParameters
 function minecraftReconfigure($service_id, $array, $force = false) {
 	global $config, $minecraftParameters;
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return false;
 	}
-	
+
 	//get the existing configuration
 	$minecraftConfiguration = minecraftGetConfiguration($service_id, false);
-	
+
 	//modify the configuration based on input $array settings
 	foreach($array as $k => $v) {
 		if(isset($minecraftParameters[$k])) {
@@ -340,45 +340,45 @@ function minecraftReconfigure($service_id, $array, $force = false) {
 			$minecraftConfiguration[$k] = minecraftEscape(0, 0, 0, $v);
 		}
 	}
-	
+
 	//sort the configuration intelligently
 	uksort($minecraftConfiguration, 'minecraftConfigurationComparator');
-	
+
 	//write the configuration out
 	$fout = fopen($config['minecraft_path'] . $id . "/server.properties", 'w');
-	
+
 	foreach($minecraftConfiguration as $k => $v) {
 		fwrite($fout, "$k=$v\n");
 	}
-	
+
 	fclose($fout);
-	
+
 	$jail = jailEnabled($service_id);
 	if($jail) {
 		jailFileClose($service_id, "minecraft", "server.properties", true);
 	}
-	
+
 	return true;
 }
 
 //returns array of key => value
 function minecraftGetConfigFromRequest(&$parameters, &$request) {
 	$array = array();
-	
+
 	foreach($parameters as $k => $param) { //param is array(type, default, default extra, description)
 		$form_k = "gcform_$k";
-		
+
 		//strings, integers, and select: add if it's set
 		if(($param[0] == 0 || $param[0] == 1 || $param[0] == 3) && isset($request[$form_k])) {
 			$array[$k] = $request[$form_k];
 		}
-		
+
 		//boolean variables: always set, and base on checkbox
 		else if($param[0] == 2) {
 			$array[$k] = isset($request[$form_k]) ? 1 : 0;
 		}
 	}
-	
+
 	return $array;
 }
 
@@ -388,21 +388,21 @@ function minecraftGetConfigFromRequest(&$parameters, &$request) {
 // versions: load available minecraft server version list, minecraft_path/versions/
 function minecraftServerList($service_id, $source = "plugins") {
 	global $config;
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return "Error: the identifier for this service is not set.";
 	}
-	
+
 	//ok iterate through maps
 	$extensions = array("jar");
-	
+
 	if($source == "backups") {
 		$extensions = array("uxbakzip");
 	}
-	
+
 	if($source == "repository") {
 		$dir = new DirectoryIterator($config['minecraft_path'] . "plugins");
 	} else if($source == "plugins") {
@@ -410,26 +410,26 @@ function minecraftServerList($service_id, $source = "plugins") {
 		if($jail) {
 			return jailDirList($service_id, "plugins", $extensions);
 		}
-		
+
 		$dir = new DirectoryIterator($config['minecraft_path'] . $id . "/plugins");
 	} else if($source == "backups") {
 		$jail = jailEnabled($service_id);
 		if($jail) {
 			return jailDirList($service_id, ".", $extensions);
 		}
-		
+
 		$dir = new DirectoryIterator($config['minecraft_path'] . $id);
 	} else if($source == "versions") {
 		$dir = new DirectoryIterator($config['minecraft_path'] . "versions");
 	} else {
 		return "Error: bad source to minecraftPluginList.";
 	}
-	
+
 	$array = array();
 	foreach($dir as $file) {
 		if($file->isFile()) {
 			$ext = getExtension($file->getFilename());
-			
+
 			if(in_array($ext, $extensions)) {
 		    	array_push($array, $file->getFilename());
 		    }
@@ -444,17 +444,17 @@ function minecraftServerList($service_id, $source = "plugins") {
 //true on success, string on failure
 function minecraftServerLink($service_id, $filename, $source_override = false, $relative = "plugins/") {
 	global $config;
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return "Error: the identifier for this service is not set.";
 	}
-	
+
 	//escape the file
 	$filename = escapeFile(baseName($filename));
-	
+
 	//determine the source and target files
 	if($source_override === false || $source_override == "plugin") {
 		$source = $config['minecraft_path'] . "plugins/" . $filename;
@@ -464,14 +464,14 @@ function minecraftServerLink($service_id, $filename, $source_override = false, $
 	} else {
 		$source = $source_override;
 	}
-	
+
 	$jail = jailEnabled($service_id);
 	if($jail) {
 		$target = $relative . $filename;
 	} else {
 		$target = $config['minecraft_path'] . $id . "/" . $relative . $filename;
 	}
-	
+
 	//if source doesn't exist or target exists
 	if(!file_exists($source)) {
 		return "Error: the requested file does not exist.";
@@ -487,7 +487,7 @@ function minecraftServerLink($service_id, $filename, $source_override = false, $
 			return "Error: you already have a file with the same filename.";
 		}
 	}
-	
+
 	//create the symlink
 	if($jail) {
 		jailSymlink($source, $target);
@@ -508,35 +508,35 @@ function minecraftServerLink($service_id, $filename, $source_override = false, $
 //type is one of "plugin", "version"
 function minecraftServerUpload($service_id, $files, $type = "plugin") {
 	global $config;
-	
+
 	if($type != "plugin" && $type != "version") {
 		return;
 	}
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return "Error: the identifier for this service is not set.";
 	}
-	
+
 	//check if we're allowed to upload files
 	$uploadable = getServiceParam($service_id, "uploadable");
-	
+
 	if($uploadable === false) {
 		return "Uploads are not allowed for this service; instead, try using the linking form.";
 	}
-	
+
 	//make sure didn't exceed limit on plugins
 	if($type == "plugin") {
 		$pluginLimit = getServiceParam($service_id, "plimit");
-	
+
 		if($pluginLimit === false) {
 			$pluginLimit = 1000;
 		}
-	
+
 		$num_plugins = count(minecraftServerList($service_id));
-	
+
 		if($num_plugins > $pluginLimit) {
 			return "You have exceeded the limit on the number of plugins. Please contact support.";
 		}
@@ -546,16 +546,16 @@ function minecraftServerUpload($service_id, $files, $type = "plugin") {
 	    //Check if the file is a map and it's size is less than 20MB
 	    $filename = basename($files['uploaded_file']['name']);
 	    $ext = getExtension($filename);
-	    
+
 	    if ($ext == "jar" && $files["uploaded_file"]["size"] < 20000000) {
 	        //Determine the path to which we want to save this file
-	        
+
 	        if($type == "plugin") {
 	        	$newname = $config['minecraft_path'] . $id . "/plugins/" . escapeFile($filename);
 	        } else if($type == "version") {
 	        	$newname = $config['minecraft_path'] . $id . "/minecraft.jar";
 	        }
-	        
+
 	        //Check if the file with the same name is already exists on the server
 	        if (!file_exists($newname)) {
 	            //Attempt to move the uploaded file to it's new place
@@ -569,7 +569,7 @@ function minecraftServerUpload($service_id, $files, $type = "plugin") {
 	            			minecraftServerLink($service_id, "minecraft.jar", $newname, "");
 	            		}
 	            	}
-	            	
+
 	                return true;
 	            } else {
 	                return "Error: could not move the uploaded file.";
@@ -589,24 +589,24 @@ function minecraftServerUpload($service_id, $files, $type = "plugin") {
 //type is one of "plugins", "." (latter for backups)
 function minecraftServerDelete($service_id, $filename, $type = "plugins") {
 	global $config;
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return "Error: the identifier for this service is not set.";
 	}
-	
+
 	//if type is current directory, then it's for backups and restrict the extensions
 	if($type == "." && getExtension($filename) != 'uxbakzip') {
 		return "Error: invalid world backup filename to delete.";
 	}
-	
+
 	//escape the plugin
 	$filename = escapeFile(baseName($filename));
 	$relTarget = $type . "/" . $filename;
 	$target = $config['minecraft_path'] . $id . "/" . $relTarget;
-	
+
 	//unlink plugin, choose method depending on jail
 	$jail = jailEnabled($service_id);
 	if(!$jail) {
@@ -621,28 +621,28 @@ function minecraftServerDelete($service_id, $filename, $type = "plugins") {
 //returns string on failure or true on success
 function minecraftUpdateFile($service_id, $filename, $content) {
 	global $config, $minecraftUpdatableFiles;
-	
+
 	//limit writable length
 	if(strlen($content) > 100000) {
 		return;
 	}
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return;
 	}
-	
+
 	$pass = in_array($filename, $minecraftUpdatableFiles);
 	$target = $config['minecraft_path'] . $id . "/" . $filename;
-	
+
 	if($pass) {
 		$content = str_replace("\r", "", $content);
 		$fout = fopen($target, 'w');
 		fwrite($fout, $content);
 		fclose($fout);
-		
+
 		$jail = jailEnabled($service_id);
 		if($jail) {
 			jailFileClose($service_id, "minecraft", $filename, true);
@@ -653,26 +653,26 @@ function minecraftUpdateFile($service_id, $filename, $content) {
 //returns string file content
 function minecraftDisplayFile($service_id, $filename) {
 	global $config, $minecraftUpdatableFiles;
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return "Error: failed to load file!";
 	}
-	
+
 	if(in_array($filename, $minecraftUpdatableFiles)) {
 		$jail = jailEnabled($service_id);
 		if($jail) {
 			jailFileOpen($service_id, "minecraft", $filename);
 		}
-		
+
 		$str = file_get_contents($config['minecraft_path'] . $id . "/" . $filename);
-		
+
 		if($jail) {
 			jailFileClose($service_id, "minecraft", $filename, false);
 		}
-		
+
 		return $str;
 	} else {
 		return "Error: failed to load file!";
@@ -682,31 +682,31 @@ function minecraftDisplayFile($service_id, $filename) {
 //returns false if failed to read log, or array of lines on success
 function minecraftGetLog($service_id, $numlines = 400) {
 	global $config;
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return "Error: the identifier for this service is not set.";
 	}
-	
+
 	$log_file = $config['minecraft_path'] . $id . '/server.log';
-	
+
 	$jail = jailEnabled($service_id);
-	
+
 	if(($jail && !jailFileExists($service_id, "server.log")) || (!$jail && !file_exists($log_file))) {
 		return false;
 	}
-	
+
 	//read last lines of the log file
 	$output_array = array();
-	
+
 	if($jail) {
 		jailExecute($service_id, "tail -n 1000 " . escapeshellarg(jailPath($service_id) . "server.log"), $output_array);
 	} else {
 		exec("tail -n 1000 " . escapeshellarg($log_file), $output_array);
 	}
-	
+
 	return $output_array;
 }
 
@@ -715,24 +715,24 @@ function minecraftCommand($service_id, $command) {
 	if(strlen($command > 1000)) {
 		return "Error: the entered command is too long!";
 	}
-	
+
 	//get the configuration
 	$configuration = minecraftGetConfiguration($service_id, false);
-	
+
 	if(isset($configuration['rcon.password']) && isset($configuration['rcon.port'])) {
 		$hostname = "localhost";
-		
+
 		if(!empty($configuration['server-ip'])) {
 			$hostname = $configuration['server-ip'];
 		}
-		
+
 		require_once(includePath() . "/rcon.php");
 		try {
 			$rcon = new RCon($hostname, $configuration['rcon.port'], $configuration['rcon.password']);
 		} catch(Exception $e) {
 			return "Error: $e";
 		}
-		
+
 		if($rcon->Auth()) {
 			//allow execution of multiple commands
 			if(is_array($command)) {
@@ -742,7 +742,7 @@ function minecraftCommand($service_id, $command) {
 			} else {
 				$rcon->rconCommand($command);
 			}
-			
+
 			return true;
 		} else {
 			return "Error: failed to connect and authenticate with Minecraft server (is it online?).";
@@ -755,20 +755,20 @@ function minecraftCommand($service_id, $command) {
 //backups current world state
 function minecraftBackupWorld($service_id, $label) {
 	global $config;
-	
+
 	$label = stripAlphaNumeric($label);
-	
+
 	if(empty($label) || strlen($label) > 32) {
 		$label = uid(5);
 	}
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return "Error: the identifier for this service is not set.";
 	}
-	
+
 	//make sure didn't exceed limit on backups
 	$backupLimit = getServiceParam($service_id, "blimit");
 
@@ -781,13 +781,13 @@ function minecraftBackupWorld($service_id, $label) {
 	if($num_backups > $backupLimit) {
 		return "You have exceeded the limit on the number of backups. Please contact support.";
 	}
-	
+
 	//try to turn off saving and do a save of the current world state
 	// don't worry if this fails; if it fails the server probably isn't running...
 	$result = minecraftCommand($service_id, array("save-off", "save-all"));
-	
+
 	sleep(2); //wait for anything to finish
-	
+
 	//copy the world directory to temporary directory
 	$jail = jailEnabled($service_id);
 	if($jail) {
@@ -795,7 +795,7 @@ function minecraftBackupWorld($service_id, $label) {
 	} else {
 		recursiveCopy($config['minecraft_path'] . $id . "/world", $config['minecraft_path'] . $id . "/world_tmp");
 	}
-	
+
 	//zip the directory simply, delete the temporary directory
 	if($jail) {
 		jailExecute($service_id, "cd " . escapeshellarg(jailPath($service_id)) . " && zip -r " . escapeshellarg(jailPath($service_id) . $label . ".uxbakzip") . " world_tmp");
@@ -804,7 +804,7 @@ function minecraftBackupWorld($service_id, $label) {
 		exec("cd " . escapeshellarg($config['minecraft_path'] . $id) . " && zip -r " . escapeshellarg($config['minecraft_path'] . $id . "/" . $label . ".uxbakzip") . " world_tmp");
 		delete_directory($config['minecraft_path'] . $id . "/world_tmp");
 	}
-	
+
 	minecraftCommand($service_id, "save-on");
 }
 
@@ -812,35 +812,35 @@ function minecraftBackupWorld($service_id, $label) {
 function minecraftRestoreWorld($service_id, $label) {
 	global $config;
 	$label = stripAlphaNumeric($label);
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return "Error: the identifier for this service is not set.";
 	}
-	
+
 	//require stopped to restore
 	$pid = getServiceParam($service_id, "pid");
-	
+
 	if($pid !== false && $pid != 0) {
 		return "Error: please stop the server before restoring the world.";
 	}
-	
+
 	//check for existence
 	$jail = jailEnabled($service_id);
 	$filename = $label . ".uxbakzip";
-	
+
 	if($jail) {
 		$path = jailPath($service_id) . $filename;
 	} else {
 		$path = $config['minecraft_path'] . $id . "/" . $filename;
 	}
-	
+
 	if(($jail && !jailFileExists($filename)) || (!$jail && !file_exists($path))) {
 		return "Error: the requested backup doesn't appear to exist.";
 	}
-	
+
 	//unzip and move the world directory
 	if($jail) {
 		jailExecute($service_id, "unzip " . escapeshellarg(jailPath($service_id) . $label . ".uxbakzip") . " -d " . escapeshellarg(jailPath($service_id)));
@@ -851,51 +851,47 @@ function minecraftRestoreWorld($service_id, $label) {
 		delete_directory($config['minecraft_path'] . $id . "/world");
 		rename($config['minecraft_path'] . $id . "/world_tmp", $config['minecraft_path'] . $id . "/world");
 	}
-	
+
 	return true;
 }
 
 //true on success, string error on failure
 function minecraftStart($service_id) {
 	global $config;
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return "Error: failed to find identifier. Perhaps this isn't a minecraft service?";
 	}
-	
+
 	//check if the bot is already started
 	$pid = getServiceParam($service_id, "pid");
-	
+
 	if($pid !== false && $pid != 0) {
 		return "Error: the server is already online.";
 	}
-	
+
 	//make sure we didn't start too recently to prevent Battle.net flooding
 	//** eh... maybe remove this because... it's minecraft server? :P
 	$last_time = getServiceParam($service_id, "start_time2");
-	
-	if($last_time !== false && $last_time != 0 && time() - $last_time < 900) {
-		return "Error: please wait ten minutes between starting or restarting the server.";
-	}
-	
+
 	//start the bot
 	$jail = jailEnabled($service_id);
 	$memoryLimit = minecraftMemoryLimit($service_id);
-	
+
 	if($jail) {
 		$pid = jailExecuteBackground($service_id, "cd " . escapeshellarg(jailPath($service_id)) . " && nohup java -jar -Xmx{$memoryLimit}M minecraft.jar > /dev/null 2>&1 & echo $!");
 	} else {
 		$pid = execBackground("cd " . escapeshellarg($config['minecraft_path'] . $id) . " && nohup java -jar -Xmx{$memoryLimit}M minecraft.jar > /dev/null 2>&1 & echo $!");
 	}
-	
+
 	//save the pid and last start time
 	setServiceParam($service_id, "pid", $pid);
 	setServiceParam($service_id, "start_time2", getServiceParam($service_id, "start_time"));
 	setServiceParam($service_id, "start_time", time());
-	
+
 	return true;
 }
 
@@ -904,26 +900,26 @@ function minecraftStart($service_id) {
 // b) ignore warning if bot is already offline according to PID
 function minecraftStop($service_id, $restart = false) {
 	global $config;
-	
+
 	//get the identifier
 	$id = stripAlphaNumeric(getServiceParam($service_id, "id"));
-	
+
 	if($id === false) {
 		return "Error: failed to find identifier. Perhaps this isn't a minecraft service?";
 	}
-	
+
 	//make sure we are allowed to stop the bot
 	if(!$restart) {
 		$nostop = getServiceParam($service_id, "nostop");
-	
+
 		if($nostop) {
 			return "Error: you are not allowed to stop this server. Use restart instead.";
 		}
 	}
-	
+
 	//get the pid
 	$pid = stripAlphaNumeric(getServiceParam($service_id, "pid"));
-	
+
 	if($pid === false || $pid == 0) {
 		if($restart) {
 			return true;
@@ -931,7 +927,7 @@ function minecraftStop($service_id, $restart = false) {
 			return "Error: the server is already offline.";
 		}
 	}
-	
+
 	//stop the bot
 	$jail = jailEnabled($service_id);
 	if($jail) {
@@ -939,21 +935,21 @@ function minecraftStop($service_id, $restart = false) {
 	} else {
 		//make sure PID is still of pychop
 		$result = exec("cat /proc/$pid/cmdline");
-		
+
 		if(stripos($result, 'minecraft') !== false) {
 			exec("kill $pid");
 		}
 	}
-	
+
 	//reset the pid
 	setServiceParam($service_id, "pid", 0);
-	
+
 	return true;
 }
 
 function minecraftRestart($service_id) {
 	$result = minecraftStop($service_id, true);
-	
+
 	if($result === true) {
 		sleep(1);
 		return minecraftStart($service_id);
@@ -965,7 +961,7 @@ function minecraftRestart($service_id) {
 //STYLE FUNCTIONS
 function minecraftDisplayConfiguration($k, $v, $parameters) {
 	$form_k = htmlspecialchars("gcform_$k");
-	
+
 	if(isset($parameters[$k])) {
 		$type = $parameters[$k][0];
 		$options = $parameters[$k][2];
