@@ -20,7 +20,7 @@ $ghostParameters = array(
 	'bot_checkmultipleipusage' => array(2, 1, 0, 'Whether to report multiple IP usage in lobby'),
 	'bot_spoofchecks' => array(3, 1, array(0 => 'Disable automatic spoofchecking', 1 => 'Enable auto-spoofcheck on all players', 2 => 'Enable auto-spoofcheck on admins only'), 'Spoofchecking method'),
 	'bot_requirespoofchecks' => array(2, 1, 0, 'Whether to require players to spoofcheck before starting the game'),
-	'bot_reserveadmins' => array(2, 1, 0, 'Whether to reserve admins (reserved players can alwyas join full games)'),
+	'bot_reserveadmins' => array(2, 1, 0, 'Whether to reserve admins (reserved players can always join full games)'),
 	'bot_autolock' => array(2, 0, 0, 'Whether to lock the game when the owner joins'),
 	'bot_allowdownloads' => array(3, 1, array(0 => 'Disable map downloads', 1 => 'Enable map downloads', 2 => 'Conditional map downloads'), 'Whether to allow map downloads'),
 	'bot_autokickping' => array(1, 400, 0, 'Maximum ping before a player will be kicked'),
