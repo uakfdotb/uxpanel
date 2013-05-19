@@ -20,10 +20,10 @@ if(isset($config['cronParameters'])) {
 //identifier will be used as the database name
 function databaseAddService($account_id, $service_name, $service_description, $identifier) {
 	$identifier = stripAlphaNumeric($identifier);
-	
+
 	//register database
 	$service_id = createService($account_id, $service_name, $service_description, "database", array('db_name' => $identifier, 'db_host' => "localhost", 'db_username' => 'root', 'db_password' => ''));
-	
+
 	return $service_id;
 }
 
@@ -35,7 +35,7 @@ function databaseSettings($service_id) {
 	$db_host = getServiceParam($service_id, 'db_host');
 	$db_username = getServiceParam($service_id, 'db_username');
 	$db_password = getServiceParam($service_id, 'db_password');
-	
+
 	if($db_name !== false && $db_host !== false && $db_username !== false && $db_password !== false) {
 		return array('name' => $db_name, 'server' => $db_host, 'username' => $db_username, 'password' => $db_password);
 	} else {
@@ -49,22 +49,22 @@ function databaseConnect($service_id) {
 	if(isset($GLOBALS['link_service_' . $service_id])) {
 		return $GLOBALS['link_service_' . $service_id];
 	}
-	
+
 	$db_name = getServiceParam($service_id, 'db_name');
 	$db_host = getServiceParam($service_id, 'db_host');
 	$db_username = getServiceParam($service_id, 'db_username');
 	$db_password = getServiceParam($service_id, 'db_password');
-	
+
 	if($db_name !== false && $db_host !== false && $db_username !== false && $db_password !== false) {
 		$link = new mysqli($db_host, $db_username, $db_password, $db_name);
-		
+
 		# set timezone for compatibility
 		# ** actually, this doesn't work since default is DATETIME instead of TIMESTAMP
 		//mysql_query("SET time_zone = '+0:00'", $link);
-		
+
 		# set global field
 		$GLOBALS['link_service_' . $service_id] = $link;
-		
+
 		return $link;
 	} else {
 		return false;
@@ -75,24 +75,24 @@ function databaseConnect($service_id) {
 //returns true on success, string error message on failure
 function databaseSetup($service_id, $reset = false) {
 	global $config;
-	
+
 	if($link = databaseConnect($service_id)) {
 		$filename = 'install.sql';
-		
+
 		if($reset) {
 			$filename = 'reset.sql';
 		}
-		
+
 		$fin = @fopen($config['ghost_path'] . $filename, 'r');
-		
+
 		if($fin === false) {
 			return "Failed to read from " . $config['ghost_path'] . $filename;
 		}
-		
+
 		$query_buffer = "";
 		while(($buffer = fgets($fin, 4096)) !== false) {
 			$buffer = trim($buffer);
-			
+
 			if(strlen($buffer) > 0 && $buffer[0] != "#") {
 				if(strpos($buffer, ";") !== false) {
 					$link->query($query_buffer . $buffer);
@@ -102,7 +102,7 @@ function databaseSetup($service_id, $reset = false) {
 				}
 			}
 		}
-		
+
 		fclose($fin);
 		return true;
 	} else {
@@ -113,20 +113,20 @@ function databaseSetup($service_id, $reset = false) {
 //returns array of realm_server
 function databaseGetRealms($service_id) {
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return array();
 	}
-	
+
 	$result = $link->query("SELECT DISTINCT spoofedrealm FROM gameplayers");
 	$array = array("uswest.battle.net", "useast.battle.net", "europe.battle.net", "asia.battle.net");
-	
+
 	while($row = $result->fetch_array()) {
 		if($row[0] != "" && !in_array($row[0], $array)) {
 			$array[] = $row[0];
 		}
 	}
-	
+
 	$result->close();
 	return $array;
 }
@@ -136,15 +136,15 @@ function databaseGetRealms($service_id) {
 //returns array of ('botid' =. botid, 'gamename' => gamename, 'ownername' => ownername, 'creatorname' => creatorname, 'map' => map, 'slotstaken' => slotstaken, 'slotstotal' => slotstotal, 'usernames' => usernames, 'totalgames' => totalgames, 'totalplayers' => totalplayers, 'id' => table id)
 function databaseGetRunning($service_id) {
 	$link = databaseConnect($service_id);
-	
+
 	if($link) {
 		$result = $link->query("SELECT botid, gamename, ownername, creatorname, map, slotstaken, slotstotal, usernames, totalgames, totalplayers, id FROM gamelist WHERE gamename != '' ORDER BY botid, id DESC");
 		$array = array();
-		
+
 		while($row = $result->fetch_array()) {
 			$array[] = array('botid' => $row[0], 'gamename' => $row[1], 'ownername' => $row[2], 'creatorname' => $row[3], 'map' => $row[4], 'slotstaken' => $row[5], 'slotstotal' => $row[6], 'usernames' => $row[7], 'totalgames' => $row[8], 'totalplayers' => $row[9], 'id' => $row[10]);
 		}
-		
+
 		$result->close();
 		return $array;
 	} else {
@@ -157,15 +157,15 @@ function databaseGetRunning($service_id) {
 function databaseGetGames($service_id, $start = 0) {
 	$start = intval($start);
 	$link = databaseConnect($service_id);
-	
+
 	if($link) {
 		$result = $link->query("SELECT id, botid, gamename, ownername, creatorname, map, datetime, duration FROM games WHERE gamename != '' ORDER BY id DESC LIMIT $start, 30");
 		$array = array();
-		
+
 		while($row = $result->fetch_array()) {
 			$array[] = array('id' => $row[0], 'botid' => $row[1], 'gamename' => $row[2], 'ownername' => $row[3], 'creatorname' => $row[4], 'map' => $row[5], 'datetime' => $row[6], 'duration' => $row[7]);
 		}
-		
+
 		$result->close();
 		return $array;
 	} else {
@@ -180,20 +180,20 @@ function databaseGetGames($service_id, $start = 0) {
 function databaseGetGame($service_id, $game_id, $fast = false) {
 	$game_id = escape($game_id);
 	$link = databaseConnect($service_id);
-	
+
 	if($link) {
 		if(!$fast) {
 			$result = $link->query("SELECT botid, gamename, ownername, creatorname, map, datetime, duration, id FROM games WHERE id = '$game_id'");
-		
+
 			if($row = $result->fetch_array()) {
 				$array = array('botid' => $row[0], 'gamename' => $row[1], 'ownername' => $row[2], 'creatorname' => $row[3], 'map' => $row[4], 'datetime' => $row[5], 'duration' => $row[6], 'players' => array(), 'id' => $row[7]);
-			
+
 				$result = $link->query("SELECT name, ip, spoofedrealm, `left`, leftreason FROM gameplayers WHERE gameid = '$game_id'");
-			
+
 				while($row = $result->fetch_array()) {
 					$array['players'][] = array('name' => $row[0], 'ip' => $row[1], 'spoofedrealm' => $row[2], 'left' => $row[3], 'leftreason' => $row[4]);
 				}
-			
+
 				return $array;
 			} else {
 				return false;
@@ -202,7 +202,7 @@ function databaseGetGame($service_id, $game_id, $fast = false) {
 			$result = $link->query("SELECT gamename FROM games WHERE id = '$game_id'");
 			$row = $result->fetch_array();
 			$result->close();
-			
+
 			if($row) {
 				return $row[0];
 			} else {
@@ -222,41 +222,41 @@ function databaseGetGame($service_id, $game_id, $fast = false) {
 function databaseBanUser($service_id, $username, $realm, $duration, $reason, $unban = false, $name_only = false, $ban_aliases = false) {
 	global $config;
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return false;
 	}
-	
+
 	$message = "";
 	$username = escape(strtolower($username));
 	$realm = escape($realm);
 	$duration = escape(intval($duration) * 3600);
 	$reason = escape($reason);
-		
+
 	$realms = databaseGetRealms($service_id);
-	
+
 	//find a realm to use by default that is not blank
 	$default_realm = "";
-	
+
 	foreach($realms as $i_realm) {
 		if($i_realm != "") {
 			$default_realm = $i_realm;
 			break;
 		}
 	}
-	
+
 	if($realm != "") $realms = array($realm);
-		
+
 	foreach($realms as $realm_it) {
 		$where = "WHERE name = '$username' AND spoofedrealm = '$realm_it'";
-		
+
 		//unban the user if we're supposed to
 		if($unban) {
 			$link->query("DELETE FROM bans WHERE name = '$username' AND server = '$realm_it'");
 			$message .= "Unbanned $username on $realm_it<br />";
 			continue;
 		}
-		
+
 		//make sure user isn't already banned
 		$result = $link->query("SELECT COUNT(*) FROM bans WHERE name = '$username' AND server = '$realm_it'");
 		$row = $result->fetch_array();
@@ -266,15 +266,15 @@ function databaseBanUser($service_id, $username, $realm, $duration, $reason, $un
 			$message .= "Skipping $realm_it: already banned!<br />";
 			continue;
 		}
-		
+
 		//last few IP addresses logged; limited to 15 addresses within the last 30 days
 		$result = $link->query("SELECT DISTINCT ip FROM gameplayers LEFT JOIN games ON gameplayers.gameid = games.id $where AND datetime > DATE_SUB( NOW( ), INTERVAL 30 DAY) ORDER BY gameplayers.id DESC LIMIT 15");
-		
+
 		//only continue if both we have found some addresses and we don't want to just ban by name
 		if(!$name_only && $result->num_rows > 0) {
 			while($row = $result->fetch_array()) {
 				$ip = escape($row[0]);
-				
+
 				//if this is for non-spoofchecked users, ban on default realm
 				$ban_realm = $realm_it;
 				if($ban_realm == "") $ban_realm = $default_realm;
@@ -299,50 +299,50 @@ function databaseBanUser($service_id, $username, $realm, $duration, $reason, $un
 				$message .= "Banned by name on $realm_it<br />";
 			}
 		}
-		
+
 		$result->close();
 	}
-	
+
 	if($ban_aliases) {
 		$message .= "Banning aliases...<br />";
-		
+
 		$searchRealm = $realm;
-		
+
 		if($searchRealm == "") {
 			$searchRealm = $default_realm;
 		}
-		
+
 		//get list of aliases and ban them on the default realm
 		$array = array();
 		databaseAliases($service_id, $username, $searchRealm, 1, $array);
 		$players = array_keys($array);
-		
+
 		foreach($players as $p_str) {
 			$p_info = databaseGetPlayer($p_str);
-			
+
 			$aliasName = escape($p_info[0]);
 			$aliasRealm = escape($p_info[1]);
-			
+
 			if($aliasName == $username && $aliasRealm == $searchRealm) {
 				continue;
 			}
-			
+
 			$message .= databaseBanUser($service_id, $aliasName, $aliasRealm, $duration, $reason, false, true);
 			$message .= "Banned alias $aliasName@$aliasRealm<br />";
 		}
 	}
-	
+
 	return $message;
 }
 
 //deletes a ban
 function databaseDeleteBan($service_id, $ban_id) {
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return;
 	}
-	
+
 	$ban_id = escape($ban_id);
 	$link->query("DELETE FROM bans WHERE id = '$ban_id'");
 }
@@ -351,7 +351,7 @@ function databaseDeleteBan($service_id, $ban_id) {
 function databaseGetBans($service_id) {
 	global $config;
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return array();
 	}
@@ -363,11 +363,11 @@ function databaseGetBans($service_id) {
 	}
 	
 	$array = array();
-	
+
 	while($row = $result->fetch_array()) {
 		$array[$row[0]] = array('name' => $row[1], 'server' => $row[2], 'ip' => $row[3], 'admin' => $row[4], 'gamename' => $row[5], 'reason' => $row[6], 'date' => $row[7], 'expiredate' => $row[8]);
 	}
-	
+
 	$result->close();
 	return $array;
 }
@@ -378,19 +378,19 @@ function databaseGetBans($service_id) {
 function databaseSearchUser($service_id, $username, $realm) {
 	global $config;
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return array();
 	}
-	
+
 	$username = escape($username);
 	$realm = escape($realm);
-	
+
 	$realms = databaseGetRealms($service_id);
 	if($realm != "") $realms = array($realm);
-	
+
 	$array = array();
-	
+
 	foreach($realms as $realm_it) {
 		$where = "WHERE name = '$username'";
 		if($realm_it != "*") $where .= " AND spoofedrealm = '$realm_it'";
@@ -406,21 +406,21 @@ function databaseSearchUser($service_id, $username, $realm) {
 		}
 		
 		$row = $result->fetch_array();
-		
+
 		$firstgame = $row[0];
 		$lastgame = $row[1];
 		$totalgames = $row[2];
 		$leftpercent = $row[3];
 		$lastgames = explode(",", $row[4]);
-		
+
 		$array[$realm_it] = array('firstgame' => $firstgame, 'lastgame' => $lastgame, 'totalgames' => $totalgames, 'leftpercent' => $leftpercent, 'lastgames' => array(), 'bans' => array());
-		
+
 		foreach($lastgames as $gid) {
 			if($gid != 0) {
 				$array[$realm_it]['lastgames'][$gid] = databaseGetGame($service_id, $gid, true);
 			}
 		}
-		
+
 		if($totalgames != 0) {
 			//ban history
 			if($config['db_expiredate'] === false) {
@@ -434,28 +434,28 @@ function databaseSearchUser($service_id, $username, $realm) {
 			}
 		}
 	}
-	
+
 	return $array;
 }
 
 //returns array of IP addresses
 function databaseIPLookup($service_id, $name, $realm, $hours = 1440) {
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return array();
 	}
-	
+
 	$name = escape($name);
 	$realm = escape($realm);
-	
+
 	$result = $link->query("SELECT DISTINCT ip FROM gameplayers LEFT JOIN games ON games.id = gameplayers.gameid WHERE name = '$name' AND spoofedrealm = '$realm' AND games.datetime > DATE_SUB( NOW( ), INTERVAL $hours HOUR) AND ip != '0.0.0.0' AND ip != '127.0.0.1'");
 	$array = array();
-	
+
 	while($row = $result->fetch_array()) {
 		$array[] = $row[0];
 	}
-	
+
 	$result->close();
 	return $array;
 }
@@ -463,42 +463,42 @@ function databaseIPLookup($service_id, $name, $realm, $hours = 1440) {
 //returns array of (username, realm)
 function databaseNameLookup($service_id, $ip) {
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return array();
 	}
-	
+
 	$ip = escape($ip);
 	$result = false;
-	
+
 	if(substr($ip, -1) == ".") {
 		$parts = explode(".", $ip);
 		$safe_ip = "";
 		$counter = 0;
-	
+
 		foreach($parts as $part) {
 			if(trim($part) != '') {
 				$safe_ip .= intval($part) . ".";
 				$counter++;
 			}
 		}
-		
+
 		if($counter >= 2) {
 			$safe_ip = escape($safe_ip);
 			$result = $link->query("SELECT DISTINCT name, spoofedrealm FROM gameplayers WHERE ip LIKE '$safe_ip%' LIMIT 20");
 		}
 	}
-	
+
 	if($result === false) {
 		$result = $link->query("SELECT DISTINCT name, spoofedrealm FROM gameplayers WHERE ip = '$ip'");
 	}
-	
+
 	$array = array();
-	
+
 	while($row = $result->fetch_row()) {
 		$array[] = array($row[0], $row[1]);
 	}
-	
+
 	$result->close();
 	return $array;
 }
@@ -506,28 +506,28 @@ function databaseNameLookup($service_id, $ip) {
 //populates $array with keys of "username@realm" strings that are aliases of the input
 function databaseAliases($service_id, $name, $realm, $depth = 1, &$array, $hours = 720, &$iparray = array()) {
 	if($depth > 3) return;
-	
+
 	//set the parameter player as seen
 	$array[$name . '@' . $realm] = true;
-	
+
 	//decrement depth
 	$depth--;
-	
+
 	//find used IP addresses
 	$used_ips = databaseIPlookup($service_id, $name, $realm, $hours);
-	
+
 	foreach($used_ips as $ip) {
 		if(!isset($iparray[$ip])) {
 			$iparray[$ip] = true;
-			
+
 			$names = databaseNameLookup($service_id, $ip);
-			
+
 			foreach($names as $p_array) {
 				$player = $p_array[0] . "@" . $p_array[1];
-				
+
 				if(!isset($array[$player])) {
 					$array[$player] = true;
-					
+
 					if($depth > 0) {
 						databaseAliases($service_id, $p_array[0], $p_array[1], $depth, $array, $hours, $iparray);
 					}
@@ -540,11 +540,11 @@ function databaseAliases($service_id, $name, $realm, $depth = 1, &$array, $hours
 //parses a username@realm into array(username, realm)
 function databaseGetPlayer($player) {
 	$playerParts = explode('@', $player);
-	
+
 	if(count($playerParts) >= 2) {
 		$name = strtolower($playerParts[0]);
 		$realm = strtolower($playerParts[1]);
-		
+
 		if($realm == "uswest" || $realm == "west") {
 			$realm = "uswest.battle.net";
 		} else if($realm == "useast" || $realm == "east") {
@@ -554,7 +554,7 @@ function databaseGetPlayer($player) {
 		} else if($realm == "asia") {
 			$realm = "asia.battle.net";
 		}
-		
+
 		return array($name, $realm);
 	} else {
 		return array($player, "uswest.battle.net");
@@ -564,15 +564,15 @@ function databaseGetPlayer($player) {
 //returns the last time (string) that a username was seen, on any realm
 function databaseLastPlayed($service_id, $name) {
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return "Never";
 	}
-	
+
 	$name = escape($name);
 	$result = $link->query("SELECT MAX(games.datetime) FROM gameplayers LEFT JOIN games ON gameplayers.gameid = games.id WHERE gameplayers.name = '$name'");
 	$row = $result->fetch_array();
-	
+
 	if(is_null($row[0])) return "Never";
 	else return $row[0];
 }
@@ -580,52 +580,52 @@ function databaseLastPlayed($service_id, $name) {
 //returns array of id => ('name' => admin name, 'realm' => admin realm)
 function databaseGetAdmins($service_id) {
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return array();
 	}
-	
+
 	$result = $link->query("SELECT id, name, server FROM admins ORDER BY id");
 	$array = array();
-	
+
 	while($row = $result->fetch_array()) {
 		$array[$row[0]] = array('name' => $row[1], 'realm' => $row[2]);
 	}
-	
+
 	$result->close();
 	return $array;
 }
 
 function databaseAddAdmin($service_id, $name, $server) {
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return array();
 	}
-	
-	$name = escape($name);
+
+	$name = escape(strtolower($name));
 	$server = escape($server);
 	$link->query("INSERT INTO admins (botid, name, server) VALUES ('0', '$name', '$server')");
 }
 
 function databaseDeleteAdmin($service_id, $admin_id) {
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return;
 	}
-	
+
 	$admin_id = escape($admin_id);
 	$link->query("DELETE FROM admins WHERE id = '$admin_id'");
 }
 
 function databaseExecuteCommand($service_id, $botid, $command) {
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return array();
 	}
-	
+
 	$botid = escape($botid);
 	$command = escape($command);
 	$link->query("INSERT INTO commands (botid, command) VALUES ('$botid', '$command')");
@@ -633,32 +633,32 @@ function databaseExecuteCommand($service_id, $botid, $command) {
 
 function databaseClearBans($service_id) {
 	$link = databaseConnect($service_id);
-	
+
 	if(!$link) {
 		return array();
 	}
-	
+
 	$link->query("DELETE FROM bans");
 }
 
 //returns array of key => value
 function databaseGetConfigFromRequest(&$parameters, &$request) {
 	$array = array();
-	
+
 	foreach($parameters as $k => $param) { //param is array(type, default, default extra, description)
 		$form_k = "gcform_$k";
-		
+
 		//strings, integers, and select: add if it's set
 		if(($param[0] == 0 || $param[0] == 1 || $param[0] == 3) && isset($request[$form_k])) {
 			$array[$k] = $request[$form_k];
 		}
-		
+
 		//boolean variables: always set, and base on checkbox
 		else if($param[0] == 2) {
 			$array[$k] = isset($request[$form_k]) ? 1 : 0;
 		}
 	}
-	
+
 	return $array;
 }
 
@@ -688,17 +688,17 @@ function databaseConfEscape($type, $default, $type_extra, $value) {
 //returns an array of k => v
 function databaseGetCronConfig($service_id) {
 	$array = array();
-	
+
 	foreach($GLOBALS['cronParameters'] as $k => $v) {
 		$setting = getServiceParam($service_id, "cron_" . $k);
-		
+
 		if($setting === false) {
 			$setting = $v[1];
 		}
-		
+
 		$array[$k] = $setting;
 	}
-	
+
 	return $array;
 }
 
