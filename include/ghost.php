@@ -202,7 +202,7 @@ function ghostAddService($account_id, $service_name, $service_description, $iden
 
 	//create motd.txt, gameloaded.txt, gameover.txt
 	$fh = fopen($directory . "motd.txt", 'w');
-	fwrite($fh, "This is the default welcome message. If you are the bot administrator, you can change this by logging into uxpanel and going to the message manager.\nThis game is hosted using GHost and uxpanel.\nuxpanel is developed by uakf.b and Luna Ghost.\nFor more information, see codelain.com and uxpanel.clanent.net.");
+	fwrite($fh, "This is the default welcome message. If you are the bot administrator, you can change this by logging into uxpanel and going to the message manager.\nThis game is hosted using GHost and uxpanel.\nuxpanel is developed by uakf.b and Luna Ghost.\nFor more information, see codelain.com and uxpanel.entgaming.net.");
 	fclose($fh);
 
 	$fh = fopen($directory . "gameloaded.txt", 'w');
