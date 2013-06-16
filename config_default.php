@@ -55,6 +55,11 @@ $config['channel_path'] = $config['root_path'] . "channel/";
 # path to Minecraft on server, with trailing slash
 $config['minecraft_path'] = $config['root_path'] . "minecraft/";
 
+### ** Garena settings
+
+# path to Garena on server, with trailing slash
+$config['garena_path'] = $config['root_path'] . "garena/";
+
 ### ** database settings
 
 # path to the cron file, if it is being used

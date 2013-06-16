@@ -240,7 +240,7 @@ function ghostGetStatus($service_id) {
 	//read last lines of the log file and scan for interesting things
 	$lines = ghostGetLog($service_id, 1000);
 
-	if($lines === false) {
+	if(empty($lines)) {
 		return array('status' => "Failed to read log file", 'err' => array(), 'color' => 'red');
 	}
 
