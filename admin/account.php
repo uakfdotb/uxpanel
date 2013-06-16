@@ -58,6 +58,17 @@ if(isset($_SESSION['admin']) && isset($_REQUEST['id'])) {
 				} else {
 					header("Location: account.php?id=$account_id&message=" . urlencode($result));
 				}
+			} else if($type == "garena") {
+				include("../include/garena.php");
+				$result = garenaAddService($account_id, $_POST['name'], $_POST['description'], $_POST['identifier']);
+				
+				if(is_integer($result)) {
+					setServiceParam($result, "due", $_POST['due']);
+					setServiceParam($result, "price", $_POST['price']);
+					$message = "Garena service has been setup successfully.";
+				} else {
+					header("Location: account.php?id=$account_id&message=" . urlencode($result));
+				}
 			} else if($type == "database") {
 				include("../include/database.php");
 				$result = databaseAddService($account_id, $_POST['name'], $_POST['description'], $_POST['identifier']);

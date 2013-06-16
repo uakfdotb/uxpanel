@@ -16,6 +16,7 @@ Name: <input type="text" name="name" />
 	<option value="channel">Channel bot</option>
 	<option value="database">Database</option>
 	<option value="minecraft">Minecraft</option>
+	<option value="garena">Garena</option>
 	</select>
 <br />Identifier: <input type="text" name="identifier" />
 <br />Price: <input type="text" name="price" value="N/A" />
