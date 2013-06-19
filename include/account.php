@@ -54,6 +54,62 @@ function adminGetAccount($id) {
 	}
 }
 
+//search for all services matching some filter(s)
+//returns array(account id, account name, account email, service id, service name, service type)
+function adminSearchServices($name, $description, $type, $param_key, $param_val) {
+	global $db;
+	
+	$name = escape($name);
+	$description = escape($description);
+	$type = escape($type);
+	$param_key = escape($param_key);
+	$param_val = escape($param_val);
+
+	$query = "SELECT DISTINCT accounts.id, accounts.name, accounts.email, services.id, services.name, services.type";
+	
+	$query .= " FROM services, accounts";
+	if(!empty($param_key) || !empty($param_val)) {
+		$query .= ", service_params";
+	}
+	
+	$query .= " WHERE accounts.id = services.account_id";
+	
+	if(!empty($name)) {
+		$query .= " AND services.name LIKE '%$name%'";
+	}
+	
+	if(!empty($description)) {
+		$query .= " AND services.description LIKE '%$description%'";
+	}
+	
+	if(!empty($type)) {
+		$query .= " AND services.type LIKE '%$type%'";
+	}
+	
+	if(!empty($param_key) || !empty($param_val)) {
+		$query .= " AND services.id = service_params.service_id";
+		
+		if(!empty($param_key)) {
+			$query .= " AND service_params.k LIKE '%$param_key%'";
+		}
+		
+		if(!empty($param_val)) {
+			$query .= " AND service_params.v LIKE '%$param_val%'";
+		}
+	}
+	
+	$query .= " ORDER BY services.id";
+	
+	$result = $db->query($query);
+	$array = array();
+	
+	while($row = $result->fetch_array()) {
+		$array[] = array('account_id' => $row[0], 'account_name' => $row[1], 'account_email' => $row[2], 'service_id' => $row[3], 'service_name' => $row[4], 'service_type' => $row[5]);
+	}
+	
+	return $array;
+}
+
 function createService($account_id, $service_name, $service_description, $service_type, $service_param) {
 	global $db;
 	
