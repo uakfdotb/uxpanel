@@ -490,7 +490,7 @@ function minecraftServerLink($service_id, $filename, $source_override = false, $
 
 	//create the symlink
 	if($jail) {
-		jailSymlink($source, $target);
+		jailSymlink($service_id, $source, $target);
 		$result = true;
 	} else {
 		$result = symlink($source, $target);
@@ -607,13 +607,14 @@ function minecraftServerDelete($service_id, $filename, $type = "plugins") {
 	$relTarget = $type . "/" . $filename;
 	$target = $config['minecraft_path'] . $id . "/" . $relTarget;
 
-	//unlink plugin, choose method depending on jail
+	//unlink plugin (even if jail, the file itself is still stored in the minecraft_path folder
+	if(file_exists($target)) {
+		unlink($target);
+	}
+	
+	//now, delete the symlink from the jail
 	$jail = jailEnabled($service_id);
-	if(!$jail) {
-		if(file_exists($target)) {
-			unlink($target);
-		}
-	} else {
+	if($jail) {
 		jailFileDelete($service_id, $relTarget);
 	}
 }
