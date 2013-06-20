@@ -39,7 +39,7 @@ Name: <input type="text" name="name" />
 	<td><?= htmlspecialchars($serviceExtra[$service['id']]['price']) ?></td>
 	<td><?= htmlspecialchars($serviceExtra[$service['id']]['due']) ?></td>
 	<td>
-		<form method="post" action="account.php?id=<?= $id ?>">
+		<form method="post" action="account.php?id=<?= $id ?>" onsubmit="return confirm('Are you sure you want to delete this service?');">
 		<input type="hidden" name="action" value="delete" />
 		<input type="hidden" name="delete_id" value="<?= htmlspecialchars($service['id']) ?>" />
 		<input type="submit" value="delete" />

@@ -21,7 +21,7 @@ Email address: <input type="text" name="email" />
 	<td><a href="account.php?id=<?= $id ?>"><?= htmlspecialchars($info['email']) ?></a></td>
 	<td><?= htmlspecialchars($info['name']) ?></td>
 	<td>
-		<form method="post" action="accounts.php">
+		<form method="post" action="accounts.php" onsubmit="return confirm('Are you sure you want to delete this account?');">
 		<input type="hidden" name="action" value="delete" />
 		<input type="hidden" name="delete_id" value="<?= $id ?>" />
 		<input type="submit" value="delete" />

@@ -301,7 +301,7 @@ function get_page($page, $context, $args = array()) {
 	} else if($context == "garena") {
 		$navbar = array("./?id=$service_id" => "Status", "config.php?id=$service_id" => "Configuration", "log.php?id=$service_id" => "View log", '../panel/' => 'Back to panel', '../panel/index.php?action=logout' => "Logout");
 	} else if($context == "admin") {
-		$navbar = array('./' => "Home", 'accounts.php' => "Accounts", 'status.php' => "Status", 'announce.php' => "Announcements", 'index.php?action=logout' => "Logout");
+		$navbar = array('./' => "Home", 'accounts.php' => "Accounts", 'status.php' => "Status", 'announce.php' => "Announcements", 'search.php' => "Search", 'index.php?action=logout' => "Logout");
 	} else {
 		//oops, context should be one of the above
 		return;

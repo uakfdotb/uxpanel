@@ -4,7 +4,7 @@ function announceAdd($title, $body) {
 	global $db;
 	
 	$title = escape($title);
-	$body = escape($body);
+	$body = escape(nl2br($body));
 	$db->query("INSERT INTO announcements (title, body, time) VALUES ('$title', '$body', '" . time() . "')");
 	return $db->insert_id;
 }
