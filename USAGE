@@ -1,4 +1,6 @@
+******************
 *** Logging in ***
+******************
 
 After setting up, you'll want to login with your administrator account. To do this, go to
 	http://example.com/uxpanel/admin/
@@ -11,13 +13,17 @@ If you are logging in as a normal user, use this link instead:
 uxpanel will restrict your access if you fail to login too many times. In that case, just wait until you can login again. Alternatively, clear the uxpanel locks table:
 	DELETE FROM locks;
 
+*********************************
 *** Creating a client account ***
+*********************************
 
 The administrator account does not have services. To have services, you need to create a client account. To do this, select Accounts from the admin panel, enter an email address, password, and name, and then create the account.
 
 There are two ways to access the account. You can either morph into the new account through the admin Accounts tab, or login to the account through the normal user login page.
 
+***********************************
 *** Creating a database service ***
+***********************************
 
 This section covers how to create a database service. This applies to both existing and new services.
 
@@ -37,7 +43,9 @@ If the database doesn't exist yet, click on the "click here to do so" link that 
 	CREATE DATABASE database_name;
 	GRANT ALL ON database_name TO 'user'@'localhost' IDENTIFIED BY 'blah';
 
+********************************
 *** Creating a GHost service ***
+********************************
 
 ** New service **
 
@@ -68,16 +76,90 @@ Now, go to the Account Services page and select the new service. You must fill o
 
 If you have set up a database service, you can automatically configure the GHost service to use the database. To do this, select the GHost service and enter the Service Manager. Then, under "Set database settings", enter the ID number of the database service (this can be found in the URL for the database service Service Manager page) and hit the button.
 
+*********************************
 *** Creating a pychop service ***
+*********************************
 
 This is similar to creating a GHost service.
 
+***********************
 *** Setting up jail ***
+***********************
 
 The uxpanel jail system enhances security by running host bots as a separate user. It is highly recommended that you use this system.
 
 For information on how to set it up, see uxpanel/include/jail.php.
 
-*** Setting up slave ***
+WARNING: while the jail system will run processes as a separate user, it implements no under security measures. It doesn't provide much additional benefit unless you take steps to lock down these separate users via other software or configurations.
 
-The uxpanel slave system allows you to run uxpanel across multiple servers. Information is not currently available.
+************************
+*** Setting up slave ***
+************************
+
+The uxpanel slave system allows you to run uxpanel across multiple servers.
+
+First, install and configure uxpanel on both the master server and any slave servers. On slave servers, set a unique slave_id in the configuration file, and set the database server to the master server.
+
+When creating a new service, use the slave server administration section instead of the master.
+
+To automatically redirect users to the service page on the slave, set the following service parameters: slave and slave_id. The first should be a URL, with trailing slash, to the slave panel instance directory. The second should be the unique ID of the target slave (this is mostly for the cron setup, if you have a custom cron script executed through cron.php).
+
+************
+*** Cron ***
+************
+
+Cron can be useful for several things, such as updating stats on database services.
+
+uxpanel comes with a cron file that can be used to execute custom cron functions defined in a separate PHP file, referenced as cron_path in configuration. The uxpanel cron.php will automatically run any custom cron functions found in the cron_path file for each service, and then also execute a custom shutdown function (if exists) that can be used to send alerts after service-specific functions finish executing.
+
+An example custom cron file can be found in sample/custom_cron.php.
+
+**************************
+*** Service parameters ***
+**************************
+
+Service parameters let you define specific restrictions or other settings for individual services. This is a list of all service parameters.
+
+All services:
+ - id: this is usually the subdirectory (of the relevant service type path) where the service resides.
+ - price: the price of this service; value format: $X.Y [monthly/quarterly/semi-annually/annually] (format is only needed for the admin Status tab)
+ - due: the date that this service is "due"
+ - slave: if this service resides on a slave uxpanel instance, this is the URL to the root uxpanel installation on the slave (with trailing slash)
+ - slave_id: the unique slave ID if this service resides on a slave uxpanel instance
+
+Process-based services (all except database):
+ - pid: the current process ID, or 0 if not running
+ - start_time: some services have this, it indicates the last time the service was started
+ - start_time2: some services have this, indicating the last last time service was started
+ - jail: set to 1 if jail should be enabled
+ - jail_user: the username of jail account
+ - jail_path: the absolute path, with trailing slash, to service directory under jailed account
+
+GHost:
+ - extrakeys: the name of any extra keys in configuration files that the user can set
+ - ignorekeys: keys that should be hidden to the user (warning: recommended to use default.cfg instead)
+ - mclimit: limit on the number of map configuration files (default: 200)
+ - mlimit: limit on the number of maps (default: 1000)
+ - nostop: indicates that this service cannot be stopped (but can be restarted)
+
+Channel:
+ - extrakeys, ignorekeys: see same setting under GHost
+ - nostop: see same setting under GHost
+
+Database:
+ - db_name: the database name
+ - db_host: the hostname where database is located
+ - db_username: the database username
+ - db_password: the database password
+ - replay_base: URL with trailing slash where replays are stored (i.e., replays should reside in this URL); default blank, indicated no direct replay download
+
+Minecraft:
+ - memory: memory in megabytes to use for -Xmx option (default 1024)
+ - uploadable: set to 1 if user is allowed to upload own JAR files for plugins and server
+ - plimit: limit on the number of plugins
+ - blimit: limit on the number of world backups
+ - nostop: see same setting under GHost
+
+Garena:
+ - extrakeys, ignorekeys: see same setting under GHost
+ - climit: limit on the number of room connections for this Garena instance

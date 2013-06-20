@@ -1,20 +1,26 @@
 It is currently rather complicated to install uxpanel. However, this document will guide you through the installation.
 
+******************
 *** Extraction ***
+******************
 
 First, download uxpanel and extract if necessary.
 Copy all files to somewhere in your web root.
 
 In this guide, we will assume you have installed uxpanel to http://example.com/uxpanel/ in /var/www/uxpanel/.
 
+*********************
 *** Configuration ***
+*********************
 
 Now, fill in the local configuration information. First:
 	cd /var/www/uxpanel && cp config_default.php config_local.php
 
 Go through config_local.php and fill in the options. In particular, set site_name, ghost_path (shouldn't exist yet), ghost_password (set to random string), channel_path (shouldn't exist yet), mail_from, admin_password, and the database configuration.
 
+**********************
 *** Database setup ***
+**********************
 
 First, create the database. The database name is the db_name configuration option; we will use "uxpanel" for the name, along with the username and password:
 	CREATE DATABASE uxpanel;
@@ -23,11 +29,15 @@ First, create the database. The database name is the db_name configuration optio
 
 This will create all the needed tables and such.
 
+*******************************
 *** Directory configuration ***
+*******************************
 
 Now, we will set up some directories. These directories will hold the files that will be shared across all services. When (/if) you create a new service through uxpanel, it will base the new service on the files in these directories. This applies to all three types of services (GHost, pychop, database).
 
+*************************************
 *** Ghost directory configuration ***
+*************************************
 
 Create the ghost_path that you set earlier in configuration. We will use /home/uxpanel/ghost/:
 	mkdir /home/uxpanel/ghost/
@@ -43,7 +53,9 @@ In addition, a maps/ directory should exist (/home/uxpanel/ghost/maps/). This wi
 The web user will need access to the ghost directory:
 	chown -R www-data:www-data /home/uxpanel/ghost/
 
+***************************************
 *** Channel directory configuration ***
+***************************************
 
 The channel directory structure is similar, except these files are needed instead:
 	- chop++: the pychop executable file
@@ -51,7 +63,9 @@ The channel directory structure is similar, except these files are needed instea
 	- plugins/: a directory containing all of the plugins to use
 	- cfg/: a directory containing default cfg/ pychop configuration files (not including the main chop.cfg configuration file though)
 
+*****************************************
 *** Minecraft directory configuration ***
+*****************************************
 
 mkdir /home/uxpanel/minecraft/
 cd /home/uxpanel/minecraft/
@@ -63,6 +77,8 @@ Add the following files:
 
 To enable user to upload plugins and server versions, add a service parameter with key "uploadable" and value "1" (actually any value works). You should only do this if you're using the jail feature and have properly set user resource limits and filesystem permissions.
 
+********************
 *** Finishing up ***
+********************
 
-Now, the uxpanel installation is complete.
+Now, the uxpanel installation is complete. Use /check.php to check your configuration for problems.
