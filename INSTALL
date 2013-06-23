@@ -14,7 +14,7 @@ In this guide, we will assume you have installed uxpanel to http://example.com/u
 *********************
 
 Now, fill in the local configuration information. First:
-	cd /var/www/uxpanel && cp config_default.php config_local.php
+	cd /var/www/uxpanel && cp config_local.sample.php config_local.php
 
 Go through config_local.php and fill in the options. In particular, set site_name, ghost_path (shouldn't exist yet), ghost_password (set to random string), channel_path (shouldn't exist yet), mail_from, admin_password, and the database configuration.
 
