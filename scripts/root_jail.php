@@ -13,6 +13,11 @@ function rootJail($service_id, $username) {
 		die("Error: identifier for this service has not been set!\n");
 	}
 	
+	//make sure it hasn't been jailed yet
+	if(getServiceParam($service_id, "jail") !== false || getServiceParam($service_id, "jail_user") !== false || getServiceParam($service_id, "jail_path") !== false) {
+		die("Error: target service already has jail settings!\n");
+	}
+	
 	//get service type
 	$type = getServiceType($service_id);
 	
@@ -47,6 +52,11 @@ function rootJail($service_id, $username) {
 		rexec("sed -i " . escapeshellarg("s/bot_mappath = maps/bot_mappath = {$escaped_source_path}maps/") . " " . escapeshellarg($target_path . "default.cfg"));
 		rexec("sed -i " . escapeshellarg("s/bot_replaypath = replays/bot_replaypath = {$escaped_source_path}replays/") . " " . escapeshellarg($target_path . "default.cfg"));
 	}
+	
+	//update the jail settings
+	setServiceParam($service_id, "jail", "1");
+	setServiceParam($service_id, "jail_user", $username);
+	setServiceParam($service_id, "jail_path", $target_path);
 }
 
 ?>
