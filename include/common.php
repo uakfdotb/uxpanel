@@ -96,37 +96,30 @@ function stripAlphaNumeric($str) {
 	return preg_replace("/[^a-zA-Z0-9\s]/", "", $str);
 }
 
-function recursiveCopy( $path, $dest )
-{
-	if( is_dir($path) )
-	{
-		mkdir( $dest );
+function recursiveCopy($path, $dest) {
+	if(is_dir($path)) {
+		if(!file_exists($dest)) {
+			mkdir($dest);
+		}
+		
 		$objects = scandir($path);
-		if( sizeof($objects) > 0 )
-		{
-			foreach( $objects as $file )
-			{
-				if( $file == "." || $file == ".." )
+		if(sizeof($objects) > 0) {
+			foreach($objects as $file) {
+				if($file == "." || $file == "..")
 					continue;
 				// go on
-				if( is_dir( $path.DIRECTORY_SEPARATOR.$file ) )
-				{
-					recursiveCopy( $path.DIRECTORY_SEPARATOR.$file, $dest.DIRECTORY_SEPARATOR.$file );
-				}
-				else
-				{
-					copy( $path.DIRECTORY_SEPARATOR.$file, $dest.DIRECTORY_SEPARATOR.$file );
+				if(is_dir($path . DIRECTORY_SEPARATOR . $file)) {
+					recursiveCopy($path . DIRECTORY_SEPARATOR . $file, $dest . DIRECTORY_SEPARATOR . $file);
+				} else {
+					copy($path . DIRECTORY_SEPARATOR . $file, $dest . DIRECTORY_SEPARATOR . $file);
 				}
 			}
 		}
 		return true;
 	}
-	elseif( is_file($path) )
-	{
+	elseif(is_file($path)) {
 		return copy($path, $dest);
-	}
-	else
-	{
+	} else {
 		return false;
 	}
 }
@@ -186,22 +179,26 @@ function includePath() {
 
 //returns a relative path to the base / directory, without trailing slash
 function basePath() {
-	$commonPath = __FILE__;
-	$requestPath = $_SERVER['SCRIPT_FILENAME'];
+	if(!isset($GLOBALS['OVERRIDE_BASEPATH'])) {
+		$commonPath = __FILE__;
+		$requestPath = $_SERVER['SCRIPT_FILENAME'];
 	
-	//count the number of slashes
-	// number of .. needed for include level is numslashes(request) - numslashes(common)
-	// then add one more to get to base
-	$commonSlashes = substr_count($commonPath, '/');
-	$requestSlashes = substr_count($requestPath, '/');
-	$numParent = $requestSlashes - $commonSlashes + 1;
+		//count the number of slashes
+		// number of .. needed for include level is numslashes(request) - numslashes(common)
+		// then add one more to get to base
+		$commonSlashes = substr_count($commonPath, '/');
+		$requestSlashes = substr_count($requestPath, '/');
+		$numParent = $requestSlashes - $commonSlashes + 1;
 	
-	$basePath = ".";
-	for($i = 0; $i < $numParent; $i++) {
-		$basePath .= "/..";
+		$basePath = ".";
+		for($i = 0; $i < $numParent; $i++) {
+			$basePath .= "/..";
+		}
+	
+		return $basePath;
+	} else {
+		return $GLOBALS['OVERRIDE_BASEPATH'];
 	}
-	
-	return $basePath;
 }
 
 function timeString($time = -1) {
