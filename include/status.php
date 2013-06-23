@@ -1,5 +1,9 @@
 <?php
 
+if(!isset($GLOBALS['IN_UXPANEL'])) {
+	die("Access forbidden.");
+}
+
 function statusStripNumeric($str) {
 	return preg_replace("/[^0-9.]/", "", $str);
 }

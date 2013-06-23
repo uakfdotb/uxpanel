@@ -1,5 +1,9 @@
 <?php
 
+if(!isset($GLOBALS['IN_UXPANEL'])) {
+	die("Access forbidden.");
+}
+
 // array of editable chop.cfg parameters and their type
 // key => (type, default, default extra, description)
 // types:

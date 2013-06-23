@@ -1,5 +1,9 @@
 <?php
 
+if(!isset($GLOBALS['IN_UXPANEL'])) {
+	die("Access forbidden.");
+}
+
 ### ** server information
 
 # a unique name for this uxpanel instance

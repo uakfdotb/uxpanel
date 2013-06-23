@@ -1,5 +1,9 @@
 <?php
 
+if(php_sapi_name() !== 'cli') {
+	die("Access forbidden.");
+}
+
 $command = $argv[1];
 
 $pid = pcntl_fork();

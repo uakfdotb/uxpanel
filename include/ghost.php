@@ -1,5 +1,9 @@
 <?php
 
+if(!isset($GLOBALS['IN_UXPANEL'])) {
+	die("Access forbidden.");
+}
+
 // array of editable ghost.cfg parameters and their type
 // this does not include bnet parameters
 // key => (type, default, default extra, description)

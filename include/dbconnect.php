@@ -1,5 +1,9 @@
 <?php
 
+if(!isset($GLOBALS['IN_UXPANEL'])) {
+	die("Access forbidden.");
+}
+
 //if slave, use persistent connections in case we are remote and making connection takes a while
 if($config['slave_enabled']) {
 	$prefix = "p:"; 

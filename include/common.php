@@ -1,7 +1,9 @@
 <?php
 
-function string_begins_with($string, $search)
-{
+# set global variable so that non-user-facing PHP files cannot be accessed directly
+$IN_UXPANEL = true;
+
+function string_begins_with($string, $search) {
 	return (strncmp($string, $search, strlen($search)) == 0);
 }
 
