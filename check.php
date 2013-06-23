@@ -79,10 +79,28 @@ if(!extension_loaded('mcrypt')) {
 	result('PHP mcrypt extension', 'PHP mcrypt extension is loaded', true);
 }
 
-if(!file_exists($config['root_path']) || !is_writable($config['root_path'])) {
-	result('Submission directory', "Root service path (\$config['root_path']) does not exist or is not writable", false);
+if(!file_exists($config['ghost_path']) || !is_writable($config['ghost_path'])) {
+	result('GHost services', "GHost service path (\$config['ghost_path']) does not exist or is not writable", false);
 } else {
-	result('Submission directory', 'Root service path exists and is writable', true);
+	result('GHost services', 'GHost service path exists and is writable', true);
+}
+
+if(!file_exists($config['channel_path']) || !is_writable($config['channel_path'])) {
+	result('Channel services', "Channel service path (\$config['channel_path']) does not exist or is not writable", false);
+} else {
+	result('Channel services', 'Channel service path exists and is writable', true);
+}
+
+if(!file_exists($config['garena_path']) || !is_writable($config['garena_path'])) {
+	result('Garena services', "Garena service path (\$config['garena_path']) does not exist or is not writable", false);
+} else {
+	result('Garena services', 'Garena service path exists and is writable', true);
+}
+
+if(!file_exists($config['minecraft_path']) || !is_writable($config['minecraft_path'])) {
+	result('Minecraft services', "Minecraft service path (\$config['minecraft_path']) does not exist or is not writable", false);
+} else {
+	result('Minecraft services', 'Minecraft service path exists and is writable', true);
 }
 
 if(!in_array('sha512', hash_algos())) {
