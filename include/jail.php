@@ -1,5 +1,9 @@
 <?php
 
+if(!isset($GLOBALS['IN_UXPANEL'])) {
+	die("Access forbidden.");
+}
+
 # this file provides jailing functionality to give extra security to uxpanel
 # to use jailing functionality:
 #  1. Create a separate Linux user for the panel user

@@ -1,5 +1,9 @@
 <?php
 
+if(!isset($GLOBALS['IN_UXPANEL'])) {
+	die("Access forbidden.");
+}
+
 function adminRegisterAccount($email, $password, $name) {
 	global $db;
 	

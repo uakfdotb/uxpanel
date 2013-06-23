@@ -5,6 +5,10 @@
  * www: https://defuse.ca/php-pbkdf2.htm
  */
 
+if(!isset($GLOBALS['IN_UXPANEL'])) {
+	die("Access forbidden.");
+}
+
 // These constants may be changed without breaking existing hashes.
 define("PBKDF2_HASH_ALGORITHM", "sha512");
 define("PBKDF2_ITERATIONS", 1000);

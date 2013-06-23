@@ -1,5 +1,9 @@
 <?php
 
+if(!isset($GLOBALS['IN_UXPANEL'])) {
+	die("Access forbidden.");
+}
+
 ### this file contains functions for the database service
 ### it is not for uxpanel database utility functions
 

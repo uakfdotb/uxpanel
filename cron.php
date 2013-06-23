@@ -1,5 +1,9 @@
 <?php
 
+if(php_sapi_name() !== 'cli') {
+	die("Access forbidden.");
+}
+
 include("include/common.php");
 include("config.php");
 include("include/dbconnect.php");

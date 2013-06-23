@@ -36,6 +36,10 @@ Based upon the following work:
 >>>]
 */
 
+if(!isset($GLOBALS['IN_UXPANEL'])) {
+	die("Access forbidden.");
+}
+
 define("SERVERDATA_EXECCOMMAND",2);
 define("SERVERDATA_AUTH",3);
 
