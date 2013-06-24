@@ -126,7 +126,7 @@ function databaseGetRealms($service_id) {
 	$array = array("uswest.battle.net", "useast.battle.net", "europe.battle.net", "asia.battle.net");
 
 	while($row = $result->fetch_array()) {
-		if($row[0] != "" && !in_array($row[0], $array)) {
+		if(!in_array($row[0], $array)) {
 			$array[] = $row[0];
 		}
 	}
