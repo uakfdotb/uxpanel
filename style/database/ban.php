@@ -16,7 +16,7 @@ Username: <input type="text" name="username" />
 <br />Reason: <input type="text" name="reason" />
 <br />Realm: <select name="realm">
 	<? foreach($realms as $realm) { ?>
-	<option value="<?= htmlspecialchars($realm) ?>"><?= htmlspecialchars($realm) ?></option>
+	<option value="<?= htmlspecialchars($realm) ?>"><?= empty($realm) ? "LAN/Garena/Not spoofchecked" : htmlspecialchars($realm) ?></option>
 	<? } ?>
 	<option value="">All realms (use with caution!)</option>
 	</select>

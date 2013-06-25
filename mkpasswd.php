@@ -4,8 +4,8 @@
 
 <?php
 
-include("include/pbkdf2.php");
 include("include/common.php");
+include("include/pbkdf2.php");
 
 if(isset($_REQUEST['password'])) {
 	$password = $_REQUEST['password'];
