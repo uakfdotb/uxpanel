@@ -715,6 +715,48 @@ function minecraftGetLog($service_id, $numlines = 400) {
 	return $output_array;
 }
 
+//gets the log quickly for AJAX updates
+//database calls are eliminated by caching the "id" service parameter
+// (requires reload if id changes)
+//file is loaded quickly using tail + grep combination, based on the last line received
+function minecraftGetLogFast($service_id, $last_line) {
+	global $config;
+	
+	//sanity check on input
+	if(strlen($last_line) > 2048) {
+		return false;
+	}
+	
+	//get the identifier
+	if(!isset($_SESSION[$service_id . '_getlogfast_id'])) {
+		$_SESSION[$service_id . '_getlogfast_id'] = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	}
+	
+	$id = $_SESSION[$service_id . '_getlogfast_id'];
+	$log_file = $config['minecraft_path'] . $id . '/server.log';
+	$jail = jailEnabled($service_id);
+	
+	if(($jail && !jailFileExists($service_id, "server.log")) || (!$jail && !file_exists($log_file))) {
+		return false;
+	}
+	
+	//read last lines of the log file that client hasn't received yet
+	$output_array = array();
+	
+	if($jail) {
+		jailExecute($service_id, "tail -n 1000 " . escapeshellarg(jailPath($service_id) . "server.log") . " | tac | fgrep -B 1000 -m 1 " . escapeshellarg($last_line) . " | tac", $output_array);
+	} else {
+		exec("tail -n 1000 " . escapeshellarg($log_file) . " | tac | fgrep -B 1000 -m 1 " . escapeshellarg($last_line) . " | tac", $output_array);
+	}
+	
+	if(count($output_array) <= 1) {
+		return false;
+	} else {
+		array_shift($output_array);
+		return $output_array;
+	}
+}
+
 //executes an rcon command for minecraft
 function minecraftCommand($service_id, $command) {
 	if(strlen($command > 1000)) {
