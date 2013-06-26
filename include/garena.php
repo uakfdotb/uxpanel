@@ -573,6 +573,48 @@ function garenaGetLog($service_id, $numlines = 400) {
 	return $output_array;
 }
 
+//gets the log quickly for AJAX updates
+//database calls are eliminated by caching the "id" service parameter
+// (requires reload if id changes)
+//file is loaded quickly using tail + grep combination, based on the last line received
+function garenaGetLogFast($service_id, $last_line) {
+	global $config;
+	
+	//sanity check on input
+	if(strlen($last_line) > 2048) {
+		return false;
+	}
+	
+	//get the identifier
+	if(!isset($_SESSION[$service_id . '_getlogfast_id'])) {
+		$_SESSION[$service_id . '_getlogfast_id'] = stripAlphaNumeric(getServiceParam($service_id, "id"));
+	}
+	
+	$id = $_SESSION[$service_id . '_getlogfast_id'];
+	$log_file = $config['garena_path'] . $id . '/gcb.log';
+	$jail = jailEnabled($service_id);
+	
+	if(($jail && !jailFileExists($service_id, "gcb.log")) || (!$jail && !file_exists($log_file))) {
+		return false;
+	}
+	
+	//read last lines of the log file that client hasn't received yet
+	$output_array = array();
+	
+	if($jail) {
+		jailExecute($service_id, "tail -n 1000 " . escapeshellarg(jailPath($service_id) . "gcb.log") . " | tac | fgrep -B 1000 -m 1 " . escapeshellarg($last_line) . " | tac", $output_array);
+	} else {
+		exec("tail -n 1000 " . escapeshellarg($log_file) . " | tac | fgrep -B 1000 -m 1 " . escapeshellarg($last_line) . " | tac", $output_array);
+	}
+	
+	if(count($output_array) <= 1) {
+		return false;
+	} else {
+		array_shift($output_array);
+		return $output_array;
+	}
+}
+
 //true on success, string error on failure
 function garenaStart($service_id) {
 	global $config;
